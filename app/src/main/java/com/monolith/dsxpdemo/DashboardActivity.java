@@ -6,19 +6,28 @@ import androidx.appcompat.app.AppCompatActivity;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
+import com.monolith.dsxp.driver.DsxpWorker;
 import com.monolith.dsxp.event.DsxpEventContext;
 import com.monolith.dsxp.event.DsxpEventIds;
+import com.monolith.dsxp.event.dto.DauConnectionEventData;
 import com.monolith.dsxp.tree.DsxpDeviceTree;
+import com.monolith.dsxp.tree.DsxpDeviceTreeNode;
 import com.monolith.dsxp.util.DeviceTreeUtils;
+import com.monolith.dsxp.util.ListUtils;
 import com.monolith.dsxp.warehouse.WarehouseManager;
 import com.monolith.dsxp.warehouse.component.WarehouseComponent;
+import com.monolith.dsxp.warehouse.event.InventoryUpdateEvent;
 import com.monolith.dsxp.warehouse.event.WarehouseEventIds;
+import com.monolith.dsxp.warehouse.utils.ComponentCode;
 import com.monolith.dsxp.warehouse.utils.WarehouseComponentUtils;
+import com.monolith.dsxp.warehouse.worker.WarehouseDau;
 import com.monolith.dsxpdemo.adapter.WarehouseComponentListAdapter;
 import com.monolith.dsxpdemo.dsxp.DeviceManager;
+import com.monolith.dsxpdemo.dto.WarehouseComponentListItem;
 import com.monolith.dsxpdemo.util.AlertUtils;
 
 import java.util.List;
+import java.util.Objects;
 
 /**
  * Date: 2025/10/20 17:35
@@ -52,13 +61,14 @@ public class DashboardActivity extends AppCompatActivity {
         DsxpDeviceTree deviceTree = DeviceManager.INSTANCE.getDeviceTree();
         DsxpEventContext eventContext = deviceTree.getEventContext();
         // 注册连接状态变化事件
-        eventContext.registerHandler(DsxpEventIds.DAU_CONNECTION_STATE, (dsxpDeviceTreeNode, dsxpEvent) -> {
-            Boolean online = (Boolean) dsxpEvent.getData();
-            onComponentStateUpdate(online);
+        eventContext.registerHandler(DsxpEventIds.DAU_CONNECTION_STATE, (node, event) -> {
+            DauConnectionEventData data = (DauConnectionEventData) event.getData();
+            onComponentStateUpdate(node, data.isOnline());
         });
         // 注册库存变化事件
-        eventContext.registerHandler(WarehouseEventIds.INVENTORY_UPDATE, (dsxpDeviceTreeNode, dsxpEvent) -> {
-            System.out.println(dsxpEvent.getData());
+        eventContext.registerHandler(WarehouseEventIds.INVENTORY_UPDATE, (node, event) -> {
+            InventoryUpdateEvent data = (InventoryUpdateEvent) event.getData();
+            onComponentInventoryUpdate(data);
         });
     }
 
@@ -86,9 +96,13 @@ public class DashboardActivity extends AppCompatActivity {
     private void showWarehouseComponent() {
         WarehouseManager warehouseManager = DeviceManager.INSTANCE.getWarehouseManager();
         List<WarehouseComponent> components = WarehouseComponentUtils.getAllChildren(warehouseManager.getWarehouse());
-        componentListAdapter = new WarehouseComponentListAdapter(components);
+        List<WarehouseComponentListItem> items = ListUtils.newArrayList();
+        for (WarehouseComponent component : components) {
+            WarehouseComponentListItem item = new WarehouseComponentListItem(component);
+            items.add(item);
+        }
+        componentListAdapter = new WarehouseComponentListAdapter(items);
         rvComponents.setAdapter(componentListAdapter);
-        componentListAdapter.notifyDataSetChanged();
     }
 
     private void startDriver() {
@@ -101,7 +115,37 @@ public class DashboardActivity extends AppCompatActivity {
         deviceManager.stop();
     }
 
-    private void onComponentStateUpdate(Boolean online) {
-        System.out.println(online);
+    private void onComponentStateUpdate(DsxpDeviceTreeNode node, Boolean online) {
+        DsxpWorker worker = node.getWorker();
+        if (!(worker instanceof WarehouseDau)) {
+            return;
+        }
+        WarehouseDau dau = (WarehouseDau) worker;
+        WarehouseComponent component = dau.getComponent();
+        ComponentCode code = component.code();
+        int position = getPosition(code);
+        WarehouseComponentListItem item = componentListAdapter.getItem(position);
+        item.setOnline(online);
+        componentListAdapter.notifyItemChanged(position);
+    }
+
+    private void onComponentInventoryUpdate(InventoryUpdateEvent event) {
+        ComponentCode code = event.getCode();
+        int position = getPosition(code);
+        WarehouseComponentListItem item = componentListAdapter.getItem(position);
+        item.setInventory(event.getInventoryAfter().toString() + " PCS");
+        item.setWeight(event.getOriginInventoryData().toString() + " Kg");
+        componentListAdapter.notifyItemChanged(position);
+    }
+
+    private int getPosition(ComponentCode code) {
+        for (int i = 0; i < componentListAdapter.getItemCount(); i++) {
+            WarehouseComponentListItem item = componentListAdapter.getItem(i);
+            WarehouseComponent component = item.getComponent();
+            if (Objects.equals(component.code(), code)) {
+                return i;
+            }
+        }
+        return -1;
     }
 }

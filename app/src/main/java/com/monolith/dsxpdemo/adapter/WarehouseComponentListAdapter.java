@@ -14,6 +14,7 @@ import com.monolith.dsxp.warehouse.component.ShelfLayer;
 import com.monolith.dsxp.warehouse.component.Warehouse;
 import com.monolith.dsxp.warehouse.component.WarehouseComponent;
 import com.monolith.dsxpdemo.R;
+import com.monolith.dsxpdemo.dto.WarehouseComponentListItem;
 
 import java.util.List;
 
@@ -34,22 +35,29 @@ public class WarehouseComponentListAdapter extends RecyclerView.Adapter {
 
     static class BinViewHolder extends RecyclerView.ViewHolder {
         final TextView title;
+        final TextView weight;
+        final TextView inventory;
+        final TextView online;
 
         public BinViewHolder(@NonNull View itemView) {
             super(itemView);
             this.title = itemView.findViewById(R.id.tv_bin_code);
+            this.weight = itemView.findViewById(R.id.tv_origin);
+            this.inventory = itemView.findViewById(R.id.tv_pcs);
+            this.online = itemView.findViewById(R.id.tv_state);
         }
     }
 
-    private final List<WarehouseComponent> components;
+    private final List<WarehouseComponentListItem> components;
 
-    public WarehouseComponentListAdapter(List<WarehouseComponent> components) {
+    public WarehouseComponentListAdapter(List<WarehouseComponentListItem> components) {
         this.components = components;
     }
 
     @Override
     public int getItemViewType(int position) {
-        WarehouseComponent component = components.get(position);
+        WarehouseComponentListItem listItem = components.get(position);
+        WarehouseComponent component = listItem.getComponent();
         if (component instanceof Warehouse) {
             return WAREHOUSE;
         }
@@ -87,7 +95,8 @@ public class WarehouseComponentListAdapter extends RecyclerView.Adapter {
 
     @Override
     public void onBindViewHolder(@NonNull RecyclerView.ViewHolder holder, int position) {
-        WarehouseComponent component = components.get(position);
+        WarehouseComponentListItem listItem = components.get(position);
+        WarehouseComponent component = listItem.getComponent();
         String code = component.code().asString();
         if (holder instanceof TitleViewHolder) {
             TitleViewHolder viewHolder = (TitleViewHolder) holder;
@@ -96,11 +105,18 @@ public class WarehouseComponentListAdapter extends RecyclerView.Adapter {
         if (holder instanceof BinViewHolder) {
             BinViewHolder binViewHolder = (BinViewHolder) holder;
             binViewHolder.title.setText(code);
+            binViewHolder.weight.setText(listItem.getWeight());
+            binViewHolder.inventory.setText(listItem.getInventory());
+            binViewHolder.online.setText(listItem.isOnline() ? "Online" : "Offline");
         }
     }
 
     @Override
     public int getItemCount() {
         return components.size();
+    }
+
+    public WarehouseComponentListItem getItem(int i) {
+        return components.get(i);
     }
 }
