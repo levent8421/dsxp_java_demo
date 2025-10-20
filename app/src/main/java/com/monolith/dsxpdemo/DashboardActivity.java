@@ -73,6 +73,7 @@ public class DashboardActivity extends AppCompatActivity {
     }
 
     private void showDeviceTree() {
+        // 查看设备树结构
         DsxpDeviceTree deviceTree = DeviceManager.INSTANCE.getDeviceTree();
         try {
             AlertUtils.alert(this, "Device Tree", DeviceTreeUtils.dumpAsPrintable(deviceTree), null);
@@ -82,18 +83,21 @@ public class DashboardActivity extends AppCompatActivity {
     }
 
     private void showWarehouse() {
+        // 查看仓库结构
         WarehouseManager warehouseManager = DeviceManager.INSTANCE.getWarehouseManager();
         String warehouseInfo = WarehouseComponentUtils.dumpAsPrintable(warehouseManager.getWarehouse());
         AlertUtils.alert(this, "Warehouse Info", warehouseInfo, null);
     }
 
     private void buildDriver() {
+        // 构建驱动
         DeviceManager deviceManager = DeviceManager.INSTANCE;
         deviceManager.buildDrivers();
-        showWarehouseComponent();
+        refreshBinList();
     }
 
-    private void showWarehouseComponent() {
+    private void refreshBinList() {
+        // 从驱动中获取各个库位、层、货架的状态
         WarehouseManager warehouseManager = DeviceManager.INSTANCE.getWarehouseManager();
         List<WarehouseComponent> components = WarehouseComponentUtils.getAllChildren(warehouseManager.getWarehouse());
         List<WarehouseComponentListItem> items = ListUtils.newArrayList();
