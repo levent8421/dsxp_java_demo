@@ -26,6 +26,7 @@ import com.monolith.dsxpdemo.dsxp.DeviceManager;
 import com.monolith.dsxpdemo.dto.WarehouseComponentListItem;
 import com.monolith.dsxpdemo.util.AlertUtils;
 
+import java.math.BigDecimal;
 import java.util.List;
 import java.util.Objects;
 
@@ -137,8 +138,10 @@ public class DashboardActivity extends AppCompatActivity {
         ComponentCode code = event.getCode();
         int position = getPosition(code);
         WarehouseComponentListItem item = componentListAdapter.getItem(position);
-        item.setInventory(event.getInventoryAfter().toString() + " PCS");
-        item.setWeight(event.getOriginInventoryData().toString() + " Kg");
+        BigDecimal inv = event.getInvEnd();
+        Object sensorData = event.getSensorDataEnd();
+        item.setInventory(inv.toString() + " PCS");
+        item.setWeight(sensorData.toString() + " Kg");
         componentListAdapter.notifyItemChanged(position);
     }
 

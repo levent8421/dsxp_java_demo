@@ -12,7 +12,6 @@
             <option value="$PROJECT_DIR$" />
             <option value="$PROJECT_DIR$/app" />
             <option value="$PROJECT_DIR$/dsxp_log" />
-            <option value="$PROJECT_DIR$/hardware_serial_port" />
           </set>
         </option>
         <option name="resolveExternalAnnotations" value="false" />

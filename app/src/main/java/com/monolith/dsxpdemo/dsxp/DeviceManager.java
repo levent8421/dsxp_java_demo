@@ -32,7 +32,7 @@ public class DeviceManager {
 
     private DsxpDeviceTree buildDeviceTree() {
         DsxpEventContext eventContext = new DefaultDsxpEventContext(2);
-        return new Ds3pDeviceTree(eventContext);
+        return new Ds3pDeviceTree(eventContext, new SimpleDsxpStorage());
     }
 
     public void parseDsxpResource(String resource) {

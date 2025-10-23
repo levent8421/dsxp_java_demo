@@ -26,5 +26,4 @@ dependencyResolutionManagement {
 
 rootProject.name = "DSxPDemo"
 include ':app'
-include ':hardware_serial_port'
 include ':dsxp_log'

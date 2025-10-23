@@ -44,6 +44,11 @@ android {
             debuggable true
             minifyEnabled false
         }
+        sourceSets {
+            main {
+                jniLibs.srcDirs = ['libs']
+            }
+        }
     }
     compileOptions {
         sourceCompatibility JavaVersion.VERSION_1_8
@@ -59,14 +64,14 @@ dependencies {
     implementation 'com.squareup.picasso:picasso:2.71828'
     implementation 'com.caverock:androidsvg:1.4'
     implementation project(path: ':dsxp_log')
-    implementation project(path: ':hardware_serial_port')
     testImplementation 'junit:junit:4.13.2'
     // 驱动核心
-    implementation "com.monolith:dsxp-core:1.0-SNAPSHOT"
+//    implementation "com.monolith:dsxp-core:1.0-SNAPSHOT"
     // 重力设备驱动
-    implementation "com.monolith:dsxp-mit-dsp:1.0-SNAPSHOT"
+//    implementation "com.monolith:dsxp-mit-dsp:1.0-SNAPSHOT"
     // 刷卡器驱动（身份识别）
-    implementation "com.monolith:dsxp-jt-rfid:1.0-SNAPSHOT"
+//    implementation "com.monolith:dsxp-jt-rfid:1.0-SNAPSHOT"
     // 仓库支持（包含工单引擎）
-    implementation "com.monolith:dsxp-warehouse:1.0-SNAPSHOT"
+//    implementation "com.monolith:dsxp-warehouse:1.0-SNAPSHOT"
+    implementation "org.slf4j:slf4j-api:2.0.9"
 }
