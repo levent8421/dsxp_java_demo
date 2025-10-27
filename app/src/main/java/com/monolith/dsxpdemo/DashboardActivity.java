@@ -106,7 +106,7 @@ public class DashboardActivity extends AppCompatActivity {
             WarehouseComponentListItem item = new WarehouseComponentListItem(component);
             items.add(item);
         }
-        componentListAdapter = new WarehouseComponentListAdapter(items);
+        componentListAdapter = new WarehouseComponentListAdapter(this, items);
         rvComponents.setAdapter(componentListAdapter);
     }
 
