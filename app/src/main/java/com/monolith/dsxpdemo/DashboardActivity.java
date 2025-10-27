@@ -25,6 +25,7 @@ import com.monolith.dsxp.warehouse.worker.WarehouseDau;
 import com.monolith.dsxpdemo.adapter.WarehouseComponentListAdapter;
 import com.monolith.dsxpdemo.dsxp.DeviceManager;
 import com.monolith.dsxpdemo.dto.WarehouseComponentListItem;
+import com.monolith.dsxpdemo.util.ActivityUtils;
 import com.monolith.dsxpdemo.util.AlertUtils;
 
 import java.math.BigDecimal;
@@ -56,6 +57,7 @@ public class DashboardActivity extends AppCompatActivity {
         findViewById(R.id.btn_build_driver).setOnClickListener(v -> buildDriver());
         findViewById(R.id.btn_start).setOnClickListener(v -> startDriver());
         findViewById(R.id.btn_stop).setOnClickListener(v -> stopDriver());
+        findViewById(R.id.btn_worksheet).setOnClickListener(v -> toWorksheet());
         this.rvComponents = findViewById(R.id.rvComponents);
         this.rvComponents.setLayoutManager(new LinearLayoutManager(this));
     }
@@ -90,6 +92,10 @@ public class DashboardActivity extends AppCompatActivity {
         WarehouseManager warehouseManager = DeviceManager.INSTANCE.getWarehouseManager();
         String warehouseInfo = WarehouseComponentUtils.dumpAsPrintable(warehouseManager.getWarehouse());
         AlertUtils.alert(this, "Warehouse Info", warehouseInfo, null);
+    }
+
+    private void toWorksheet() {
+        ActivityUtils.to(this, WorksheetActivity.class);
     }
 
     private void buildDriver() {

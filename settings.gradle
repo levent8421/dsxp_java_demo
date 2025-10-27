@@ -26,4 +26,3 @@ dependencyResolutionManagement {
 
 rootProject.name = "DSxPDemo"
 include ':app'
-include ':dsxp_log'

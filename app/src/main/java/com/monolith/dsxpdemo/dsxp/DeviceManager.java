@@ -11,6 +11,9 @@ import com.monolith.dsxp.tree.ds3p.Ds3pDeviceTree;
 import com.monolith.dsxp.util.StringUtils;
 import com.monolith.dsxp.warehouse.SimpleWarehouseManager;
 import com.monolith.dsxp.warehouse.WarehouseManager;
+import com.monolith.dsxp.warehouse.worksheet.WorksheetEngine;
+import com.monolith.dsxp.warehouse.worksheet.WorksheetException;
+import com.monolith.dsxp.warehouse.worksheet.impl.SimpleWorksheetEngine;
 import com.monolith.hardware_serial_port.SerialPortFactoryImpl;
 import com.monolith.mit.dsp.worker.DspDriverGroupBuilder;
 import com.monolith.mit.dsp.worker.driver.DspDriverGroupWorker;
@@ -93,5 +96,11 @@ public class DeviceManager {
 
     public void stop() {
         deviceTree.stop();
+    }
+
+    public WorksheetEngine buildWorksheetEngine() throws WorksheetException {
+        WorksheetEngine engine = new SimpleWorksheetEngine();
+        engine.setup(warehouseManager);
+        return engine;
     }
 }
