@@ -1,6 +1,7 @@
 package com.monolith.dsxpdemo;
 
 import android.os.Bundle;
+import android.os.Handler;
 
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.recyclerview.widget.LinearLayoutManager;
@@ -39,6 +40,7 @@ public class DashboardActivity extends AppCompatActivity {
     private RecyclerView rvComponents;
 
     private WarehouseComponentListAdapter componentListAdapter;
+    private final Handler handler = new Handler();
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -131,7 +133,7 @@ public class DashboardActivity extends AppCompatActivity {
         int position = getPosition(code);
         WarehouseComponentListItem item = componentListAdapter.getItem(position);
         item.setOnline(online);
-        componentListAdapter.notifyItemChanged(position);
+        handler.post(() -> componentListAdapter.notifyItemChanged(position));
     }
 
     private void onComponentInventoryUpdate(InventoryUpdateEvent event) {
@@ -142,7 +144,7 @@ public class DashboardActivity extends AppCompatActivity {
         Object sensorData = event.getSensorDataEnd();
         item.setInventory(inv.toString() + " PCS");
         item.setWeight(sensorData.toString() + " Kg");
-        componentListAdapter.notifyItemChanged(position);
+        handler.post(() -> componentListAdapter.notifyItemChanged(position));
     }
 
     private int getPosition(ComponentCode code) {

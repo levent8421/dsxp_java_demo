@@ -8,6 +8,7 @@ import android.widget.LinearLayout;
 import android.widget.TextView;
 
 import androidx.annotation.NonNull;
+import androidx.core.content.ContextCompat;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.monolith.dsxp.warehouse.WarehouseManager;
@@ -119,6 +120,7 @@ public class WarehouseComponentListAdapter extends RecyclerView.Adapter {
             binViewHolder.weight.setText(listItem.getWeight());
             binViewHolder.inventory.setText(listItem.getInventory());
             binViewHolder.online.setText(listItem.isOnline() ? "Online" : "Offline");
+            binViewHolder.online.setTextColor(listItem.isOnline() ? ContextCompat.getColor(context, R.color.teal_200) : ContextCompat.getColor(context, R.color.red));
             binViewHolder.lyBinItem.setOnClickListener(v -> {
                 PropInputAlert propInputAlert = new PropInputAlert(context, code, new PropInputAlert.OnCloseListener() {
                     @Override
