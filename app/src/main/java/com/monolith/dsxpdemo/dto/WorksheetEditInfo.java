@@ -6,36 +6,31 @@ import com.monolith.dsxp.warehouse.component.ShelfBin;
 import java.util.List;
 
 public class WorksheetEditInfo {
-    private int type;
-    private int dir;
-    private int assistMode;
-    private final List<ShelfBin> bins = ListUtils.newArrayList();
+    private String type;
+    private String dir;
+    private String assistMode;
 
-    public int getType() {
+    public String getType() {
         return type;
     }
 
-    public void setType(int type) {
+    public void setType(String type) {
         this.type = type;
     }
 
-    public int getDir() {
+    public String getDir() {
         return dir;
     }
 
-    public void setDir(int dir) {
+    public void setDir(String dir) {
         this.dir = dir;
     }
 
-    public int getAssistMode() {
+    public String getAssistMode() {
         return assistMode;
     }
 
-    public void setAssistMode(int assistMode) {
+    public void setAssistMode(String assistMode) {
         this.assistMode = assistMode;
-    }
-
-    public List<ShelfBin> getBins() {
-        return bins;
     }
 }

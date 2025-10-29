@@ -1,3 +1,11 @@
 <resources>
     <string name="app_name">DSxPDemo</string>
+
+    //工单
+    <string name="worksheet_type">工单模式：%s</string>
+    <string name="flow_dir">流向：%s</string>
+    <string name="assist_mode">协同模式：%s</string>
+    <string name="plan_qty">计划：%s</string>
+    <string name="complete_qty">完成：%s</string>
+    <string name="delta_qty">变化：%s</string>
 </resources>
