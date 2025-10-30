@@ -10,6 +10,7 @@ import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.AsyncListDiffer;
 import androidx.recyclerview.widget.RecyclerView;
 
+import com.monolith.dsxp.util.DecimalUtils;
 import com.monolith.dsxpdemo.R;
 import com.monolith.dsxpdemo.util.ViewCheck;
 
@@ -49,7 +50,7 @@ public class WorksheetRunningAdapter extends RecyclerView.Adapter<ContactViewHol
         ViewCheck.paramTextCheck(holder.txSkuName, runningModel.getSkuName());
         ViewCheck.paramTextCheck(holder.txSkuNo, runningModel.getSkuNo());
         ViewCheck.paramTextCheck(holder.txPlanQty, context.getString(R.string.plan_qty, String.valueOf(runningModel.getQtyPlanned())));
-        ViewCheck.paramTextCheck(holder.txCompleteQty, context.getString(R.string.complete_qty, String.valueOf(runningModel.getQtyCompleted())));
+        ViewCheck.paramTextCheck(holder.txCompleteQty, context.getString(R.string.complete_qty, String.valueOf(DecimalUtils.add(runningModel.getQtyCompleted(), runningModel.getQtyDelta()))));
         ViewCheck.paramTextCheck(holder.txDeltaQty, context.getString(R.string.delta_qty, String.valueOf(runningModel.getQtyDelta())));
     }
 
