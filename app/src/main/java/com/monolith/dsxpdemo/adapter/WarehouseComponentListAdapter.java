@@ -17,7 +17,10 @@ import com.monolith.dsxp.warehouse.component.ShelfBin;
 import com.monolith.dsxp.warehouse.component.ShelfLayer;
 import com.monolith.dsxp.warehouse.component.Warehouse;
 import com.monolith.dsxp.warehouse.component.WarehouseComponent;
+import com.monolith.dsxp.warehouse.component.conf.WarehouseSku;
 import com.monolith.dsxp.warehouse.utils.ComponentCodes;
+import com.monolith.dsxp.warehouse.utils.ComponentConfUtils;
+import com.monolith.dsxp.warehouse.utils.WarehouseComponentUtils;
 import com.monolith.dsxpdemo.R;
 import com.monolith.dsxpdemo.adapter.Alert.PropInputAlert;
 import com.monolith.dsxpdemo.dsxp.DeviceManager;
@@ -44,7 +47,9 @@ public class WarehouseComponentListAdapter extends RecyclerView.Adapter {
 
     static class BinViewHolder extends RecyclerView.ViewHolder {
         final LinearLayout lyBinItem;
-        final TextView title;
+        final TextView binCode;
+        final TextView skuName;
+        final TextView skuNo;
         final TextView weight;
         final TextView inventory;
         final TextView online;
@@ -52,7 +57,9 @@ public class WarehouseComponentListAdapter extends RecyclerView.Adapter {
         public BinViewHolder(@NonNull View itemView) {
             super(itemView);
             this.lyBinItem = itemView.findViewById(R.id.ly_bin_item);
-            this.title = itemView.findViewById(R.id.tv_bin_code);
+            this.binCode = itemView.findViewById(R.id.tv_bin_code);
+            this.skuName = itemView.findViewById(R.id.tv_sku_name);
+            this.skuNo = itemView.findViewById(R.id.tv_sku_no);
             this.weight = itemView.findViewById(R.id.tv_origin);
             this.inventory = itemView.findViewById(R.id.tv_pcs);
             this.online = itemView.findViewById(R.id.tv_state);
@@ -116,7 +123,12 @@ public class WarehouseComponentListAdapter extends RecyclerView.Adapter {
         }
         if (holder instanceof BinViewHolder) {
             BinViewHolder binViewHolder = (BinViewHolder) holder;
-            binViewHolder.title.setText(code);
+            binViewHolder.binCode.setText(code);
+            WarehouseSku skuConf = ComponentConfUtils.getSkuConf(component);
+            if (skuConf != null) {
+                binViewHolder.skuName.setText(skuConf.getName());
+                binViewHolder.skuNo.setText(skuConf.getNo());
+            }
             binViewHolder.weight.setText(listItem.getWeight());
             binViewHolder.inventory.setText(listItem.getInventory());
             binViewHolder.online.setText(listItem.isOnline() ? "Online" : "Offline");

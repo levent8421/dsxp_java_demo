@@ -16,10 +16,15 @@ import com.monolith.dsxp.tree.DsxpDeviceTreeNode;
 import com.monolith.dsxp.util.DeviceTreeUtils;
 import com.monolith.dsxp.util.ListUtils;
 import com.monolith.dsxp.warehouse.WarehouseManager;
+import com.monolith.dsxp.warehouse.component.Shelf;
+import com.monolith.dsxp.warehouse.component.ShelfBin;
+import com.monolith.dsxp.warehouse.component.ShelfLayer;
 import com.monolith.dsxp.warehouse.component.WarehouseComponent;
+import com.monolith.dsxp.warehouse.component.conf.WarehouseSku;
 import com.monolith.dsxp.warehouse.event.InventoryUpdateEvent;
 import com.monolith.dsxp.warehouse.event.WarehouseEventIds;
 import com.monolith.dsxp.warehouse.utils.ComponentCode;
+import com.monolith.dsxp.warehouse.utils.ComponentConfUtils;
 import com.monolith.dsxp.warehouse.utils.WarehouseComponentUtils;
 import com.monolith.dsxp.warehouse.worker.WarehouseDau;
 import com.monolith.dsxpdemo.adapter.WarehouseComponentListAdapter;
@@ -29,6 +34,7 @@ import com.monolith.dsxpdemo.util.ActivityUtils;
 import com.monolith.dsxpdemo.util.AlertUtils;
 
 import java.math.BigDecimal;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 
@@ -91,6 +97,35 @@ public class DashboardActivity extends AppCompatActivity {
         // 查看仓库结构
         WarehouseManager warehouseManager = DeviceManager.INSTANCE.getWarehouseManager();
         String warehouseInfo = WarehouseComponentUtils.dumpAsPrintable(warehouseManager.getWarehouse());
+
+        //获取货架/层/库位信息
+        List<WarehouseComponent> allComponents = warehouseManager.getAllComponents();
+        List<Shelf> shelfList = new ArrayList<>();
+        List<ShelfLayer> shelfLayerList = new ArrayList<>();
+        List<ShelfBin> shelfBinList = new ArrayList<>();
+        for (WarehouseComponent component : allComponents) {
+            if (component instanceof Shelf){
+                //货架
+                Shelf shelf = (Shelf) component;
+                shelfList.add(shelf);
+            }
+            if (component instanceof ShelfLayer){
+                //层
+                ShelfLayer shelfLayer = (ShelfLayer) component;
+                shelfLayerList.add(shelfLayer);
+            }
+            if (component instanceof ShelfBin){
+                //库位
+                ShelfBin shelfBin = (ShelfBin) component;
+                shelfBinList.add(shelfBin);
+                //获取库位绑定的sku信息
+                WarehouseSku skuConf = ComponentConfUtils.getSkuConf(component);
+                if (skuConf != null){
+                    //sku
+                }
+            }
+        }
+
         AlertUtils.alert(this, "Warehouse Info", warehouseInfo, null);
     }
 
