@@ -65,7 +65,7 @@ public class InitActivity extends AppCompatActivity {
         try {
             String deviceTreeInfo = DeviceTreeUtils.dumpAsPrintable(deviceTree);
             AlertUtils.alert(this, "Device Tree", deviceTreeInfo, (d, w) -> {
-                ActivityUtils.to(getApplicationContext(), DashboardActivity.class);
+                ActivityUtils.to(this, DashboardActivity.class);
             });
         } catch (Exception e) {
             e.printStackTrace();

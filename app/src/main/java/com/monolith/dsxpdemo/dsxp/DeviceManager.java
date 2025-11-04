@@ -29,6 +29,7 @@ public class DeviceManager {
     private final WarehouseManager warehouseManager;
 
     private DeviceManager() {
+        // 驱动 -> 连接 -> 采集点 -> 设备
         deviceTree = buildDeviceTree();
         warehouseManager = new SimpleWarehouseManager();
     }
