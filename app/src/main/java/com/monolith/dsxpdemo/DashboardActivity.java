@@ -32,8 +32,11 @@ import com.monolith.dsxp.warehouse.component.conf.WarehouseSku;
 import com.monolith.dsxp.warehouse.event.InventoryUpdateEvent;
 import com.monolith.dsxp.warehouse.event.WarehouseEventIds;
 import com.monolith.dsxp.warehouse.utils.ComponentCode;
+import com.monolith.dsxp.warehouse.utils.ComponentCodes;
 import com.monolith.dsxp.warehouse.utils.ComponentConfUtils;
 import com.monolith.dsxp.warehouse.utils.WarehouseComponentUtils;
+import com.monolith.dsxp.warehouse.worker.AccessControlDau;
+import com.monolith.dsxp.warehouse.worker.DauContainer;
 import com.monolith.dsxp.warehouse.worker.WarehouseDau;
 import com.monolith.dsxpdemo.adapter.WarehouseComponentListAdapter;
 import com.monolith.dsxpdemo.dsxp.DeviceManager;
@@ -41,6 +44,7 @@ import com.monolith.dsxpdemo.dto.WarehouseComponentListItem;
 import com.monolith.dsxpdemo.util.ActivityUtils;
 import com.monolith.dsxpdemo.util.AlertUtils;
 import com.monolith.mit.dsp.MitDspEvents;
+import com.monolith.mit.dsp.worker.dau.io.DspLockerDauWorker;
 import com.monolith.mit.dsp.worker.dau.wt.event.TraceWeightUpdateEventData;
 import com.monolith.mit.dsp.worker.device.broadcast.DspBroadcastDeviceWorker;
 
@@ -76,6 +80,8 @@ public class DashboardActivity extends AppCompatActivity {
         findViewById(R.id.btn_start).setOnClickListener(v -> startDriver());
         findViewById(R.id.btn_stop).setOnClickListener(v -> stopDriver());
         //findViewById(R.id.btn_do_zero).setOnClickListener(v -> doZeroAll());
+        findViewById(R.id.btn_open_lock).setOnClickListener(v -> openLock());
+        findViewById(R.id.btn_close_lock).setOnClickListener(v -> closeLock());
         findViewById(R.id.btn_worksheet).setOnClickListener(v -> toWorksheet());
         this.rvComponents = findViewById(R.id.rvComponents);
         this.rvComponents.setLayoutManager(new LinearLayoutManager(this));
@@ -99,6 +105,7 @@ public class DashboardActivity extends AppCompatActivity {
             TraceWeightUpdateEventData data = (TraceWeightUpdateEventData) event.getData();
             System.out.println(data);
         }));
+        //刷卡事件
         eventContext.registerHandler(RfidEvents.RFID_CARD_PRESS, (node, event) -> {
             HFDauData eventValue = (HFDauData) event.getData();
             System.out.println(eventValue.getEpc());
@@ -202,6 +209,48 @@ public class DashboardActivity extends AppCompatActivity {
                     } catch (Exception e) {
                         e.printStackTrace();
                     }
+                }
+            }
+        }
+    }
+
+    private void openLock() {
+        //这边传入想开的锁的code
+        WarehouseComponent component = DeviceManager.INSTANCE.getWarehouseManager().findComponent(ComponentCodes.parseCode("L1-1-1"));
+        DauContainer<AccessControlDau> accessControlDaus = component.getHardwareBinding().getAccessControlDaus();
+        if (accessControlDaus.isEmpty()) {
+            System.out.println("no this lock");
+            return;
+        }
+        //打开这个code下所有锁
+        for (AccessControlDau value : accessControlDaus.values()) {
+            if (value instanceof DspLockerDauWorker) {
+                DspLockerDauWorker lockerDauWorker = (DspLockerDauWorker) value;
+                try {
+                    lockerDauWorker.unlock();
+                } catch (Exception e) {
+                    break;
+                }
+            }
+        }
+    }
+
+    private void closeLock() {
+        //这边传入想关的锁的code
+        WarehouseComponent component = DeviceManager.INSTANCE.getWarehouseManager().findComponent(ComponentCodes.parseCode("L1-1-1"));
+        DauContainer<AccessControlDau> accessControlDaus = component.getHardwareBinding().getAccessControlDaus();
+        if (accessControlDaus.isEmpty()) {
+            System.out.println("no this lock");
+            return;
+        }
+        //关闭这个code下所有锁
+        for (AccessControlDau value : accessControlDaus.values()) {
+            if (value instanceof DspLockerDauWorker) {
+                DspLockerDauWorker lockerDauWorker = (DspLockerDauWorker) value;
+                try {
+                    lockerDauWorker.lock();
+                } catch (Exception e) {
+                    break;
                 }
             }
         }
