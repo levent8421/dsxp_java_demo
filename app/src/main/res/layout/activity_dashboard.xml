@@ -28,6 +28,12 @@
                 android:layout_height="wrap_content"
                 android:text="启动驱动" />
 
+            <!--<Button
+                android:id="@+id/btn_do_zero"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="广播清零" />-->
+
             <Button
                 android:id="@+id/btn_stop"
                 android:layout_width="wrap_content"

@@ -7,12 +7,18 @@ import androidx.appcompat.app.AppCompatActivity;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
+import com.monolith.dsxp.define.DsxpConnectionDefinition;
+import com.monolith.dsxp.define.DsxpDriverGroupDefinition;
+import com.monolith.dsxp.driver.DsxpBroadcastDeviceWorker;
+import com.monolith.dsxp.driver.DsxpConnectionWorker;
 import com.monolith.dsxp.driver.DsxpWorker;
 import com.monolith.dsxp.event.DsxpEventContext;
 import com.monolith.dsxp.event.DsxpEventIds;
 import com.monolith.dsxp.event.dto.DauConnectionEventData;
+import com.monolith.dsxp.tree.DsxpConnectionNode;
 import com.monolith.dsxp.tree.DsxpDeviceTree;
 import com.monolith.dsxp.tree.DsxpDeviceTreeNode;
+import com.monolith.dsxp.tree.DsxpDriverGroupNode;
 import com.monolith.dsxp.util.DeviceTreeUtils;
 import com.monolith.dsxp.util.ListUtils;
 import com.monolith.dsxp.warehouse.WarehouseManager;
@@ -32,10 +38,14 @@ import com.monolith.dsxpdemo.dsxp.DeviceManager;
 import com.monolith.dsxpdemo.dto.WarehouseComponentListItem;
 import com.monolith.dsxpdemo.util.ActivityUtils;
 import com.monolith.dsxpdemo.util.AlertUtils;
+import com.monolith.mit.dsp.MitDspEvents;
+import com.monolith.mit.dsp.worker.dau.wt.event.TraceWeightUpdateEventData;
+import com.monolith.mit.dsp.worker.device.broadcast.DspBroadcastDeviceWorker;
 
 import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 
 /**
@@ -63,6 +73,7 @@ public class DashboardActivity extends AppCompatActivity {
         findViewById(R.id.btn_build_driver).setOnClickListener(v -> buildDriver());
         findViewById(R.id.btn_start).setOnClickListener(v -> startDriver());
         findViewById(R.id.btn_stop).setOnClickListener(v -> stopDriver());
+        //findViewById(R.id.btn_do_zero).setOnClickListener(v -> doZeroAll());
         findViewById(R.id.btn_worksheet).setOnClickListener(v -> toWorksheet());
         this.rvComponents = findViewById(R.id.rvComponents);
         this.rvComponents.setLayoutManager(new LinearLayoutManager(this));
@@ -81,6 +92,11 @@ public class DashboardActivity extends AppCompatActivity {
             InventoryUpdateEvent data = (InventoryUpdateEvent) event.getData();
             onComponentInventoryUpdate(data);
         });
+        // 重量跟踪事件
+        eventContext.registerHandler(MitDspEvents.WT_TRACE_WEIGHT_UPDATE,((node, event) -> {
+            TraceWeightUpdateEventData data = (TraceWeightUpdateEventData) event.getData();
+            System.out.println(data);
+        }));
     }
 
     private void showDeviceTree() {
@@ -104,23 +120,23 @@ public class DashboardActivity extends AppCompatActivity {
         List<ShelfLayer> shelfLayerList = new ArrayList<>();
         List<ShelfBin> shelfBinList = new ArrayList<>();
         for (WarehouseComponent component : allComponents) {
-            if (component instanceof Shelf){
+            if (component instanceof Shelf) {
                 //货架
                 Shelf shelf = (Shelf) component;
                 shelfList.add(shelf);
             }
-            if (component instanceof ShelfLayer){
+            if (component instanceof ShelfLayer) {
                 //层
                 ShelfLayer shelfLayer = (ShelfLayer) component;
                 shelfLayerList.add(shelfLayer);
             }
-            if (component instanceof ShelfBin){
+            if (component instanceof ShelfBin) {
                 //库位
                 ShelfBin shelfBin = (ShelfBin) component;
                 shelfBinList.add(shelfBin);
                 //获取库位绑定的sku信息
                 WarehouseSku skuConf = ComponentConfUtils.getSkuConf(component);
-                if (skuConf != null){
+                if (skuConf != null) {
                     //sku
                 }
             }
@@ -161,6 +177,28 @@ public class DashboardActivity extends AppCompatActivity {
     private void stopDriver() {
         DeviceManager deviceManager = DeviceManager.INSTANCE;
         deviceManager.stop();
+    }
+
+    private void doZeroAll() {
+        DeviceManager deviceManager = DeviceManager.INSTANCE;
+        DsxpDeviceTree deviceTree = deviceManager.getDeviceTree();
+        Map<DsxpDriverGroupDefinition, DsxpDriverGroupNode> roots = deviceTree.getRoots();
+        for (Map.Entry<DsxpDriverGroupDefinition, DsxpDriverGroupNode> groupNodeEntry : roots.entrySet()) {
+            Map<DsxpConnectionDefinition, DsxpConnectionNode> connNodes = groupNodeEntry.getValue().getConnNodes();
+            for (Map.Entry<DsxpConnectionDefinition, DsxpConnectionNode> connectionNodeEntry : connNodes.entrySet()) {
+                final DsxpConnectionNode connectionNode = connectionNodeEntry.getValue();
+                final DsxpConnectionWorker connectionWorker = connectionNode.getConnectionWorker();
+                DsxpBroadcastDeviceWorker broadcastDevice = connectionWorker.getBroadcastDevice();
+                if (broadcastDevice instanceof DspBroadcastDeviceWorker) {
+                    DspBroadcastDeviceWorker broadcastDeviceWorker = (DspBroadcastDeviceWorker) broadcastDevice;
+                    try {
+                        broadcastDeviceWorker.broadcastDoZero();
+                    } catch (Exception e) {
+                        e.printStackTrace();
+                    }
+                }
+            }
+        }
     }
 
     private void onComponentStateUpdate(DsxpDeviceTreeNode node, Boolean online) {
