@@ -15,6 +15,8 @@ import com.monolith.dsxp.driver.DsxpWorker;
 import com.monolith.dsxp.event.DsxpEventContext;
 import com.monolith.dsxp.event.DsxpEventIds;
 import com.monolith.dsxp.event.dto.DauConnectionEventData;
+import com.monolith.dsxp.jtrfid.RfidEvents;
+import com.monolith.dsxp.jtrfid.worker.dto.HFDauData;
 import com.monolith.dsxp.tree.DsxpConnectionNode;
 import com.monolith.dsxp.tree.DsxpDeviceTree;
 import com.monolith.dsxp.tree.DsxpDeviceTreeNode;
@@ -93,10 +95,14 @@ public class DashboardActivity extends AppCompatActivity {
             onComponentInventoryUpdate(data);
         });
         // 重量跟踪事件
-        eventContext.registerHandler(MitDspEvents.WT_TRACE_WEIGHT_UPDATE,((node, event) -> {
+        eventContext.registerHandler(MitDspEvents.WT_TRACE_WEIGHT_UPDATE, ((node, event) -> {
             TraceWeightUpdateEventData data = (TraceWeightUpdateEventData) event.getData();
             System.out.println(data);
         }));
+        eventContext.registerHandler(RfidEvents.RFID_CARD_PRESS, (node, event) -> {
+            HFDauData eventValue = (HFDauData) event.getData();
+            System.out.println(eventValue.getEpc());
+        });
     }
 
     private void showDeviceTree() {
