@@ -11,6 +11,6 @@ ds3p:uart://%2Fdev%2FttyS1:115200/WT/L1-1-4?host_mode=weight_count
 ds3p:uart://%2Fdev%2FttyS1:115200/WT/L1-1-4/4?device=host_esl
 ds3p:uart://%2Fdev%2FttyS1:115200/WT/L1-1-4/4/0?device=weight_tracker
 ds3p:uart://%2Fdev%2FttyS1:115200/LK/L1-1-1/230?device=io_board&driver=mit_dsp
-ds3p:uart://%2Fdev%2FttyS1:115200/LK/L1-1-1/230/X7Y7?device=locker_hold_on&driver=mit_dsp
+ds3p:uart://%2Fdev%2FttyS1:115200/LK/L1-1-1/230/X7Y7?device=locker_pulse&driver=mit_dsp
 ds3p:uart://%2Fdev%2FttyS4:38400/RF_HF/L1?driver=jt_hf_reader
 ds3p:uart://%2Fdev%2FttyS4:38400/RF_HF/L1/1?device=hf_reader&driver=jt_hf_reader

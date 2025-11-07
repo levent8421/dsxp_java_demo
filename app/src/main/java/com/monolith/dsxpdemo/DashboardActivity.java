@@ -46,6 +46,7 @@ import com.monolith.dsxpdemo.util.AlertUtils;
 import com.monolith.mit.dsp.MitDspEvents;
 import com.monolith.mit.dsp.worker.dau.io.DspLockerDauWorker;
 import com.monolith.mit.dsp.worker.dau.wt.event.TraceWeightUpdateEventData;
+import com.monolith.mit.dsp.worker.dau.wt.event.WeightInventoryUpdateEventData;
 import com.monolith.mit.dsp.worker.device.broadcast.DspBroadcastDeviceWorker;
 
 import java.math.BigDecimal;
@@ -95,17 +96,23 @@ public class DashboardActivity extends AppCompatActivity {
             DauConnectionEventData data = (DauConnectionEventData) event.getData();
             onComponentStateUpdate(node, data.isOnline());
         });
-        // 注册库存变化事件
+        // 注册标准库存变化事件(库存变化就看这个就行了)
         eventContext.registerHandler(WarehouseEventIds.INVENTORY_UPDATE, (node, event) -> {
             InventoryUpdateEvent data = (InventoryUpdateEvent) event.getData();
             onComponentInventoryUpdate(data);
+            System.out.println(data.getInvDelta());
+        });
+        // 注册重力库位库存更新事件
+        eventContext.registerHandler(MitDspEvents.WT_INVENTORY, (node, event) -> {
+            WeightInventoryUpdateEventData data = (WeightInventoryUpdateEventData) event.getData();
+            System.out.println("跟踪库存变化：" + data.getInventoryDelta() + "    测量库存变化：" + data.getMeasuredInventoryDelta());
         });
         // 重量跟踪事件
         eventContext.registerHandler(MitDspEvents.WT_TRACE_WEIGHT_UPDATE, ((node, event) -> {
             TraceWeightUpdateEventData data = (TraceWeightUpdateEventData) event.getData();
-            System.out.println(data);
+            System.out.println(data.getWeightDelta());
         }));
-        //刷卡事件
+        //刷卡事件（1s一次上报 自行过滤）
         eventContext.registerHandler(RfidEvents.RFID_CARD_PRESS, (node, event) -> {
             HFDauData eventValue = (HFDauData) event.getData();
             System.out.println(eventValue.getEpc());
