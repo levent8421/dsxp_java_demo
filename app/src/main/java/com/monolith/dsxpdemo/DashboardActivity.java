@@ -41,6 +41,7 @@ import com.monolith.dsxp.warehouse.worker.WarehouseDau;
 import com.monolith.dsxpdemo.adapter.WarehouseComponentListAdapter;
 import com.monolith.dsxpdemo.dsxp.DeviceManager;
 import com.monolith.dsxpdemo.dto.WarehouseComponentListItem;
+import com.monolith.dsxpdemo.run.DeviceHealthStateRunner;
 import com.monolith.dsxpdemo.util.ActivityUtils;
 import com.monolith.dsxpdemo.util.AlertUtils;
 import com.monolith.mit.dsp.MitDspEvents;
@@ -65,6 +66,7 @@ public class DashboardActivity extends AppCompatActivity {
 
     private WarehouseComponentListAdapter componentListAdapter;
     private final Handler handler = new Handler();
+    private final DeviceHealthStateRunner healthStateRunner = new DeviceHealthStateRunner();
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -110,7 +112,7 @@ public class DashboardActivity extends AppCompatActivity {
         // 重量跟踪事件
         eventContext.registerHandler(MitDspEvents.WT_TRACE_WEIGHT_UPDATE, ((node, event) -> {
             TraceWeightUpdateEventData data = (TraceWeightUpdateEventData) event.getData();
-            System.out.println(data.getWeightDelta());
+            System.out.println("库位：" + node.getDef().identifier() + "变化" + data.getWeightDelta());
         }));
         //刷卡事件（1s一次上报 自行过滤）
         eventContext.registerHandler(RfidEvents.RFID_CARD_PRESS, (node, event) -> {
@@ -192,6 +194,10 @@ public class DashboardActivity extends AppCompatActivity {
     private void startDriver() {
         DeviceManager deviceManager = DeviceManager.INSTANCE;
         deviceManager.start();
+        /**
+         * 这边我偷懒直接在驱动启动后就执行 实际项目中 页面需要的时候再启动 页面不需要的时候关掉 减少资源开销 上位机主动获取的时候主动调一下run中方法返回参数即可
+         */
+        healthStateRunner.run();
     }
 
     private void stopDriver() {
