@@ -126,7 +126,8 @@ public class DashboardActivity extends AppCompatActivity {
             HFDauData eventValue = (HFDauData) event.getData();
             System.out.println(eventValue.getEpc());
         });
-        /**
+        /*
+         * 锁状态变更
          * LOCKED = 0x01;
          * UNLOCKED = 0x03;
          */
