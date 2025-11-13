@@ -29,6 +29,7 @@ import com.monolith.dsxp.warehouse.component.ShelfBin;
 import com.monolith.dsxp.warehouse.component.ShelfLayer;
 import com.monolith.dsxp.warehouse.component.WarehouseComponent;
 import com.monolith.dsxp.warehouse.component.conf.WarehouseSku;
+import com.monolith.dsxp.warehouse.event.AccessControlStateEvent;
 import com.monolith.dsxp.warehouse.event.InventoryUpdateEvent;
 import com.monolith.dsxp.warehouse.event.WarehouseEventIds;
 import com.monolith.dsxp.warehouse.utils.ComponentCode;
@@ -101,13 +102,19 @@ public class DashboardActivity extends AppCompatActivity {
         // 注册标准库存变化事件(库存变化就看这个就行了)
         eventContext.registerHandler(WarehouseEventIds.INVENTORY_UPDATE, (node, event) -> {
             InventoryUpdateEvent data = (InventoryUpdateEvent) event.getData();
-            onComponentInventoryUpdate(data);
-            System.out.println(data.getInvDelta());
+            System.out.println(data.getCode().asString() + "：标准库存变化 ==》" + data.getInvDelta());
         });
         // 注册重力库位库存更新事件
         eventContext.registerHandler(MitDspEvents.WT_INVENTORY, (node, event) -> {
             WeightInventoryUpdateEventData data = (WeightInventoryUpdateEventData) event.getData();
-            System.out.println("跟踪库存变化：" + data.getInventoryDelta() + "    测量库存变化：" + data.getMeasuredInventoryDelta());
+            DsxpWorker worker = node.getWorker();
+            if (!(worker instanceof WarehouseDau)) {
+                return;
+            }
+            WarehouseDau dau = (WarehouseDau) worker;
+            WarehouseComponent component = dau.getComponent();
+            ComponentCode code = component.code();
+            System.out.println(code + "：重力库位库存更新 ==》" + "跟踪库存变化：" + data.getInventoryDelta() + "    测量库存变化：" + data.getMeasuredInventoryDelta());
         });
         // 重量跟踪事件
         eventContext.registerHandler(MitDspEvents.WT_TRACE_WEIGHT_UPDATE, ((node, event) -> {
@@ -118,6 +125,14 @@ public class DashboardActivity extends AppCompatActivity {
         eventContext.registerHandler(RfidEvents.RFID_CARD_PRESS, (node, event) -> {
             HFDauData eventValue = (HFDauData) event.getData();
             System.out.println(eventValue.getEpc());
+        });
+        /**
+         * LOCKED = 0x01;
+         * UNLOCKED = 0x03;
+         */
+        eventContext.registerHandler(WarehouseEventIds.ACCESS_CONTROL_STATE, (node, event) -> {
+            AccessControlStateEvent controlStateEvent = (AccessControlStateEvent) event.getData();
+            System.out.println(controlStateEvent.getCode().asString() + "状态变更 ：===》" + controlStateEvent.getStateCode());
         });
     }
 
