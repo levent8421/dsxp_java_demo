@@ -220,7 +220,8 @@ public class WorksheetActivity extends AppCompatActivity implements WorksheetLif
         worksheet.setTitle("计划工单演示");
         worksheet.setAssistMode(WorksheetConstants.getAssistModeCode(editInfo.getAssistMode()));
         for (WorksheetBinCreateModel binModel : createModelMap.values()) {
-            WorksheetItem worksheetItem = WorksheetUtils.createWorksheetItem(ComponentCodes.parseCode(binModel.getBinCode()), WorksheetExpandConstants.getWorksheetTypeCode(editInfo.getType()));
+            //createExplicitItem 这种方式创建的工单项会亮灯  createOptionalItem 这种不会亮灯
+            WorksheetItem worksheetItem = WorksheetUtils.createExplicitItem(ComponentCodes.parseCode(binModel.getBinCode()));
             worksheet.getItems().add(worksheetItem);
             worksheetItem.setSkuNo(binModel.getSkuNo());
             //下面两个数值有正负的区别  正：补货  负：取货
@@ -244,7 +245,7 @@ public class WorksheetActivity extends AppCompatActivity implements WorksheetLif
         worksheet.setTitle("临时工单演示");
         worksheet.setAssistMode(WorksheetConstants.getAssistModeCode(editInfo.getAssistMode()));
         for (WorksheetBinCreateModel binModel : createModelMap.values()) {
-            WorksheetItem worksheetItem = WorksheetUtils.createWorksheetItem(ComponentCodes.parseCode(binModel.getBinCode()), WorksheetExpandConstants.getWorksheetTypeCode(editInfo.getType()));
+            WorksheetItem worksheetItem = WorksheetUtils.createExplicitItem(ComponentCodes.parseCode(binModel.getBinCode()));
             worksheet.getItems().add(worksheetItem);
             worksheetItem.setSkuNo(binModel.getSkuNo());
         }
