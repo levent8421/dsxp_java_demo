@@ -8,6 +8,7 @@ import com.monolith.dsxp.warehouse.component.ShelfBin;
 import com.monolith.dsxp.warehouse.component.WarehouseComponent;
 import com.monolith.dsxp.warehouse.component.conf.WarehouseSku;
 import com.monolith.dsxp.warehouse.utils.ComponentConfUtils;
+import com.monolith.dsxp.warehouse.worker.AccessControlTypes;
 import com.monolith.dsxp.warehouse.worksheet.WorksheetConstants;
 import com.monolith.dsxp.warehouse.worksheet.WorksheetItem;
 import com.monolith.dsxp.warehouse.worksheet.WorksheetListener;
@@ -92,7 +93,6 @@ public class WorksheetLifeCycleHandler implements WorksheetListener {
         runningModel.setQtyPlanned(DecimalUtils.orDefault(state.getPlanQty(), DecimalUtils.ZERO));
         runningModel.setQtyCompleted(DecimalUtils.orDefault(state.getCompleteQty(), DecimalUtils.ZERO));
         runningModel.setQtyDelta(DecimalUtils.orDefault(state.getInventoryDeltaQty(), DecimalUtils.ZERO));
-        runningModel.setFlowDir(WorksheetConstants.getFlowDirName(state.getFlowDir()));
         if (warehouseSku != null) {
             runningModel.setSkuName(warehouseSku.getName());
             runningModel.setSkuNo(warehouseSku.getNo());
@@ -103,6 +103,7 @@ public class WorksheetLifeCycleHandler implements WorksheetListener {
     @Override
     public void onWorksheetItemFinish(WorksheetItemPerformTask itemPerformTask) {
         // TODO 工单项领取/放回完毕业务
+        //工单项提交原因：int finishReason = itemPerformTask.getState().getFinishReason(); 锁提交、按键提交、门禁类、闸机
     }
 
     /**

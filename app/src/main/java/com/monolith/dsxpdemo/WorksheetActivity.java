@@ -24,6 +24,7 @@ import com.monolith.dsxp.warehouse.worksheet.Worksheet;
 import com.monolith.dsxp.warehouse.worksheet.WorksheetConstants;
 import com.monolith.dsxp.warehouse.worksheet.WorksheetEngine;
 import com.monolith.dsxp.warehouse.worksheet.WorksheetItem;
+import com.monolith.dsxpdemo.constant.WorksheetExpandConstants;
 import com.monolith.dsxpdemo.dsxp.DeviceManager;
 import com.monolith.dsxpdemo.dto.WorksheetEditInfo;
 import com.monolith.dsxpdemo.util.AlertUtils;
@@ -55,7 +56,7 @@ public class WorksheetActivity extends AppCompatActivity implements WorksheetLif
     /**
      * 工单类型 计划/临时
      */
-    private final List<String> worksheetTypes = List.of(WorksheetConstants.WORKSHEET_TYPE_PLAN_STR, WorksheetConstants.WORKSHEET_TYPE_TMP_STR);
+    private final List<String> worksheetTypes = List.of(WorksheetExpandConstants.WORKSHEET_TYPE_PLAN_STR, WorksheetExpandConstants.WORKSHEET_TYPE_TMP_STR);
     /**
      * 流向 取货/补货 (计划类型)
      */
@@ -160,10 +161,10 @@ public class WorksheetActivity extends AppCompatActivity implements WorksheetLif
     private void chooseDir() {
         String type = editInfo.getType();
         List<String> flowDir = Collections.emptyList();
-        if (StringUtils.equals(type, WorksheetConstants.WORKSHEET_TYPE_PLAN_STR)) {
+        if (StringUtils.equals(type, WorksheetExpandConstants.WORKSHEET_TYPE_PLAN_STR)) {
             flowDir = planFlowDirs;
         }
-        if (StringUtils.equals(type, WorksheetConstants.WORKSHEET_TYPE_TMP_STR)) {
+        if (StringUtils.equals(type, WorksheetExpandConstants.WORKSHEET_TYPE_TMP_STR)) {
             flowDir = freeFlowDirs;
         }
         List<String> finalFlowDir = flowDir;
@@ -201,10 +202,10 @@ public class WorksheetActivity extends AppCompatActivity implements WorksheetLif
         if (editInfo.getType() == null || editInfo.getDir() == null || editInfo.getAssistMode() == null) {
             return;
         }
-        if (StringUtils.equals(editInfo.getType(), WorksheetConstants.WORKSHEET_TYPE_PLAN_STR)) {
+        if (StringUtils.equals(editInfo.getType(), WorksheetExpandConstants.WORKSHEET_TYPE_PLAN_STR)) {
             startPlanWorksheet();
         }
-        if (StringUtils.equals(editInfo.getType(), WorksheetConstants.WORKSHEET_TYPE_TMP_STR)) {
+        if (StringUtils.equals(editInfo.getType(), WorksheetExpandConstants.WORKSHEET_TYPE_TMP_STR)) {
             startTmpWorksheet();
         }
     }
@@ -214,16 +215,15 @@ public class WorksheetActivity extends AppCompatActivity implements WorksheetLif
      */
     private void startPlanWorksheet() {
         Worksheet worksheet = new Worksheet("worksheetId");
+        //这边流向仅作为业务参考 不具备实际逻辑意义
         worksheet.setFlowDir(WorksheetConstants.getFlowDirCode(editInfo.getDir()));
         worksheet.setTitle("计划工单演示");
-        worksheet.setType(WorksheetConstants.getWorksheetTypeCode(editInfo.getType()));
         worksheet.setAssistMode(WorksheetConstants.getAssistModeCode(editInfo.getAssistMode()));
         for (WorksheetBinCreateModel binModel : createModelMap.values()) {
-            WorksheetItem worksheetItem = WorksheetUtils.createWorksheetItem(ComponentCodes.parseCode(binModel.getBinCode()), WorksheetConstants.getWorksheetTypeCode(editInfo.getType()));
+            WorksheetItem worksheetItem = WorksheetUtils.createWorksheetItem(ComponentCodes.parseCode(binModel.getBinCode()), WorksheetExpandConstants.getWorksheetTypeCode(editInfo.getType()));
             worksheet.getItems().add(worksheetItem);
-            //工单项流向与工单流向一致
-            worksheetItem.setFlowDir(WorksheetConstants.getFlowDirCode(editInfo.getDir()));
             worksheetItem.setSkuNo(binModel.getSkuNo());
+            //下面两个数值有正负的区别  正：补货  负：取货
             worksheetItem.setPlanQty(DecimalUtils.parse(binModel.getQtyPlanned()));
             worksheetItem.setCompleteQty(DecimalUtils.parse(binModel.getQtyCompleted()));
         }
@@ -242,13 +242,10 @@ public class WorksheetActivity extends AppCompatActivity implements WorksheetLif
         Worksheet worksheet = new Worksheet("worksheetId");
         worksheet.setFlowDir(WorksheetConstants.getFlowDirCode(editInfo.getDir()));
         worksheet.setTitle("临时工单演示");
-        worksheet.setType(WorksheetConstants.getWorksheetTypeCode(editInfo.getType()));
         worksheet.setAssistMode(WorksheetConstants.getAssistModeCode(editInfo.getAssistMode()));
         for (WorksheetBinCreateModel binModel : createModelMap.values()) {
-            WorksheetItem worksheetItem = WorksheetUtils.createWorksheetItem(ComponentCodes.parseCode(binModel.getBinCode()), WorksheetConstants.getWorksheetTypeCode(editInfo.getType()));
+            WorksheetItem worksheetItem = WorksheetUtils.createWorksheetItem(ComponentCodes.parseCode(binModel.getBinCode()), WorksheetExpandConstants.getWorksheetTypeCode(editInfo.getType()));
             worksheet.getItems().add(worksheetItem);
-            //工单项流向与工单流向一致
-            worksheetItem.setFlowDir(WorksheetConstants.getFlowDirCode(editInfo.getDir()));
             worksheetItem.setSkuNo(binModel.getSkuNo());
         }
         try {
@@ -283,7 +280,6 @@ public class WorksheetActivity extends AppCompatActivity implements WorksheetLif
             runningModelMap.put(value.getBinCode(), runningModel);
             runningModel.setBinCode(value.getBinCode());
             runningModel.setSkuName(value.getSkuName());
-            runningModel.setFlowDir(value.getFlowDir());
             runningModel.setQtyPlanned(DecimalUtils.parse(value.getQtyPlanned()));
             runningModel.setQtyCompleted(DecimalUtils.parse(value.getQtyCompleted()));
             runningModel.setQtyDelta(BigDecimal.ZERO);

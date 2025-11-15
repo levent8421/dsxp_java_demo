@@ -10,8 +10,8 @@ import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.monolith.dsxp.util.StringUtils;
-import com.monolith.dsxp.warehouse.worksheet.WorksheetConstants;
 import com.monolith.dsxpdemo.R;
+import com.monolith.dsxpdemo.constant.WorksheetExpandConstants;
 import com.monolith.dsxpdemo.dto.WorksheetEditInfo;
 import com.monolith.dsxpdemo.util.ViewCheck;
 
@@ -45,7 +45,7 @@ public class WorksheetBinListAdapter extends RecyclerView.Adapter<ContactViewHol
     public void onBindViewHolder(@NonNull ContactViewHolder holder, int position) {
         WorksheetBinCreateModel binCreateModel = list.get(position);
         ViewCheck.paramTextCheck(holder.binCode, binCreateModel.getBinCode());
-        if (StringUtils.equals(editInfo.getType(), WorksheetConstants.WORKSHEET_TYPE_PLAN_STR)) {
+        if (StringUtils.equals(editInfo.getType(), WorksheetExpandConstants.WORKSHEET_TYPE_PLAN_STR)) {
             //计划工单才有计划数量 实际使用中针对不同的类型应该创建不同的adapter
             ViewCheck.paramTextCheck(holder.quantity, context.getString(R.string.plan_qty, binCreateModel.getQtyPlanned()));
         }

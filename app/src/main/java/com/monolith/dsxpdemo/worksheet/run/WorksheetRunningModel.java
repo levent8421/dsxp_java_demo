@@ -19,7 +19,8 @@ public class WorksheetRunningModel {
     private BigDecimal qtyPlanned;
     private BigDecimal qtyCompleted;
     private BigDecimal qtyDelta;
-    private String flowDir;
+    //这边工单项不再关心流向 统一用正负体现流向 正：补货  负：取货
+    //private String flowDir;
 
     public String getBinCode() {
         return binCode;
@@ -67,14 +68,6 @@ public class WorksheetRunningModel {
 
     public void setQtyDelta(BigDecimal qtyDelta) {
         this.qtyDelta = qtyDelta;
-    }
-
-    public String getFlowDir() {
-        return flowDir;
-    }
-
-    public void setFlowDir(String flowDir) {
-        this.flowDir = flowDir;
     }
 
     @Override
