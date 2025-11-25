@@ -9,6 +9,8 @@ import androidx.recyclerview.widget.RecyclerView;
 
 import com.monolith.dsxp.define.DsxpConnectionDefinition;
 import com.monolith.dsxp.define.DsxpDriverGroupDefinition;
+import com.monolith.dsxp.define.ds3p.Ds3pUrl;
+import com.monolith.dsxp.define.ds3p.Ds3pUrlUtils;
 import com.monolith.dsxp.driver.DsxpBroadcastDeviceWorker;
 import com.monolith.dsxp.driver.DsxpConnectionWorker;
 import com.monolith.dsxp.driver.DsxpWorker;
@@ -34,7 +36,6 @@ import com.monolith.dsxp.warehouse.event.InventoryUpdateEvent;
 import com.monolith.dsxp.warehouse.event.WarehouseEventIds;
 import com.monolith.dsxp.warehouse.utils.ComponentCode;
 import com.monolith.dsxp.warehouse.utils.ComponentCodes;
-import com.monolith.dsxp.warehouse.utils.ComponentConfUtils;
 import com.monolith.dsxp.warehouse.utils.WarehouseComponentUtils;
 import com.monolith.dsxp.warehouse.worker.AccessControlDau;
 import com.monolith.dsxp.warehouse.worker.DauContainer;
@@ -124,7 +125,9 @@ public class DashboardActivity extends AppCompatActivity {
         //刷卡事件（1s一次上报 自行过滤）
         eventContext.registerHandler(RfidEvents.RFID_CARD_PRESS, (node, event) -> {
             HFDauData eventValue = (HFDauData) event.getData();
-            System.out.println(eventValue.getEpc());
+            String identifier = node.getDef().identifier();
+            Ds3pUrl ds3pUrl = Ds3pUrlUtils.parseSegments(identifier);
+            System.out.println(ds3pUrl.getDauPosition() + " : " + eventValue.getEpc());
         });
         /*
          * 锁状态变更
@@ -173,7 +176,7 @@ public class DashboardActivity extends AppCompatActivity {
                 ShelfBin shelfBin = (ShelfBin) component;
                 shelfBinList.add(shelfBin);
                 //获取库位绑定的sku信息
-                WarehouseSku skuConf = ComponentConfUtils.getSkuConf(component);
+                WarehouseSku skuConf = component.getConfContainer().getSku();
                 if (skuConf != null) {
                     //sku
                 }

@@ -17,7 +17,6 @@ import com.monolith.dsxp.warehouse.component.ShelfBin;
 import com.monolith.dsxp.warehouse.component.WarehouseComponent;
 import com.monolith.dsxp.warehouse.component.conf.WarehouseSku;
 import com.monolith.dsxp.warehouse.utils.ComponentCodes;
-import com.monolith.dsxp.warehouse.utils.ComponentConfUtils;
 import com.monolith.dsxp.warehouse.utils.WarehouseComponentUtils;
 import com.monolith.dsxp.warehouse.utils.WorksheetUtils;
 import com.monolith.dsxp.warehouse.worksheet.Worksheet;
@@ -130,7 +129,7 @@ public class WorksheetActivity extends AppCompatActivity implements WorksheetLif
         AlertUtils.showItemChoose(this, "选择库位", binCodes, (dialogInterface, i) -> {
             WorksheetBinCreateModel worksheetBinCreateModel = new WorksheetBinCreateModel();
             ShelfBin shelfBin = binCaches.get(i);
-            WarehouseSku skuConf = ComponentConfUtils.getSkuConf(shelfBin);
+            WarehouseSku skuConf = shelfBin.getConfContainer().getSku();
             worksheetBinCreateModel.setBinCode(shelfBin.code().asString());
             worksheetBinCreateModel.setSkuNo(skuConf.getNo());
             worksheetBinCreateModel.setSkuName(skuConf.getName());
@@ -149,7 +148,7 @@ public class WorksheetActivity extends AppCompatActivity implements WorksheetLif
         for (WarehouseComponent component : components) {
             if (component instanceof ShelfBin) {
                 //必须是绑定了物料的库位才能够作为工单的执行项
-                WarehouseSku skuConf = ComponentConfUtils.getSkuConf(component);
+                WarehouseSku skuConf = component.getConfContainer().getSku();
                 if (skuConf.getNo() == null || skuConf.getApw() == null) {
                     continue;
                 }

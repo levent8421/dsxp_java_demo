@@ -7,9 +7,6 @@ import com.monolith.dsxp.warehouse.WarehouseManager;
 import com.monolith.dsxp.warehouse.component.ShelfBin;
 import com.monolith.dsxp.warehouse.component.WarehouseComponent;
 import com.monolith.dsxp.warehouse.component.conf.WarehouseSku;
-import com.monolith.dsxp.warehouse.utils.ComponentConfUtils;
-import com.monolith.dsxp.warehouse.worker.AccessControlTypes;
-import com.monolith.dsxp.warehouse.worksheet.WorksheetConstants;
 import com.monolith.dsxp.warehouse.worksheet.WorksheetItem;
 import com.monolith.dsxp.warehouse.worksheet.WorksheetListener;
 import com.monolith.dsxp.warehouse.worksheet.task.WorksheetItemPerformTask;
@@ -47,7 +44,7 @@ public class WorksheetLifeCycleHandler implements WorksheetListener {
         List<WarehouseComponent> allComponents = warehouseManager.getAllComponents();
         for (WarehouseComponent component : allComponents) {
             if (component instanceof ShelfBin) {
-                WarehouseSku skuConf = ComponentConfUtils.getSkuConf(component);
+                WarehouseSku skuConf = component.getConfContainer().getSku();
                 warehouseSkuMap.put(component.code().asString(), skuConf);
             }
         }

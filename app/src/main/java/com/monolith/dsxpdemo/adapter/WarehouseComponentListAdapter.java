@@ -19,8 +19,6 @@ import com.monolith.dsxp.warehouse.component.Warehouse;
 import com.monolith.dsxp.warehouse.component.WarehouseComponent;
 import com.monolith.dsxp.warehouse.component.conf.WarehouseSku;
 import com.monolith.dsxp.warehouse.utils.ComponentCodes;
-import com.monolith.dsxp.warehouse.utils.ComponentConfUtils;
-import com.monolith.dsxp.warehouse.utils.WarehouseComponentUtils;
 import com.monolith.dsxpdemo.R;
 import com.monolith.dsxpdemo.adapter.Alert.PropInputAlert;
 import com.monolith.dsxpdemo.dsxp.DeviceManager;
@@ -124,7 +122,7 @@ public class WarehouseComponentListAdapter extends RecyclerView.Adapter {
         if (holder instanceof BinViewHolder) {
             BinViewHolder binViewHolder = (BinViewHolder) holder;
             binViewHolder.binCode.setText(code);
-            WarehouseSku skuConf = ComponentConfUtils.getSkuConf(component);
+            WarehouseSku skuConf = component.getConfContainer().getSku();
             if (skuConf != null) {
                 binViewHolder.skuName.setText(skuConf.getName());
                 binViewHolder.skuNo.setText(skuConf.getNo());
