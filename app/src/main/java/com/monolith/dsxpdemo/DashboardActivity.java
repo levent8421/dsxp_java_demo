@@ -248,6 +248,33 @@ public class DashboardActivity extends AppCompatActivity {
         }
     }
 
+    //主动获取库存
+    private void getInventory() {
+        WarehouseManager warehouseManager = DeviceManager.INSTANCE.getWarehouseManager();
+
+        //获取全部
+        List<WarehouseComponent> allComponents = warehouseManager.getAllComponents();
+        for (WarehouseComponent component : allComponents) {
+            if (component instanceof ShelfBin) {
+                ShelfBin shelfBin = (ShelfBin) component;
+                getDauInventory(shelfBin);
+            }
+        }
+
+        //单个获取
+        WarehouseComponent component = warehouseManager.findComponent(ComponentCodes.parseCode("L1-1-1"));
+        if (component instanceof ShelfBin){
+            ShelfBin shelfBin = (ShelfBin) component;
+            getDauInventory(shelfBin);
+        }
+    }
+
+    private void getDauInventory(ShelfBin shelfBin) {
+        String binCode = shelfBin.code().asString();
+        BigDecimal inventory = shelfBin.getState().getInventoryState().getInvEnd();
+        System.out.println("库位：" + binCode + " 当前库存为：" + inventory);
+    }
+
     private void openLock() {
         //这边传入想开的锁的code
         WarehouseComponent component = DeviceManager.INSTANCE.getWarehouseManager().findComponent(ComponentCodes.parseCode("L1-1-1"));
