@@ -43,7 +43,6 @@ import com.monolith.dsxp.warehouse.worker.WarehouseDau;
 import com.monolith.dsxpdemo.adapter.WarehouseComponentListAdapter;
 import com.monolith.dsxpdemo.dsxp.DeviceManager;
 import com.monolith.dsxpdemo.dto.WarehouseComponentListItem;
-import com.monolith.dsxpdemo.run.ComponentHealthStateRunner;
 import com.monolith.dsxpdemo.run.DeviceHealthStateRunner;
 import com.monolith.dsxpdemo.util.ActivityUtils;
 import com.monolith.dsxpdemo.util.AlertUtils;
@@ -263,7 +262,7 @@ public class DashboardActivity extends AppCompatActivity {
 
         //单个获取
         WarehouseComponent component = warehouseManager.findComponent(ComponentCodes.parseCode("L1-1-1"));
-        if (component instanceof ShelfBin){
+        if (component instanceof ShelfBin) {
             ShelfBin shelfBin = (ShelfBin) component;
             getDauInventory(shelfBin);
         }
@@ -272,7 +271,8 @@ public class DashboardActivity extends AppCompatActivity {
     private void getDauInventory(ShelfBin shelfBin) {
         String binCode = shelfBin.code().asString();
         BigDecimal inventory = shelfBin.getState().getInventoryState().getInvEnd();
-        System.out.println("库位：" + binCode + " 当前库存为：" + inventory);
+        BigDecimal invMeasured = shelfBin.getState().getInventoryState().getInvMeasuredEnd();
+        System.out.println("库位：" + binCode + " 当前跟踪库存为：" + inventory + " 当前测量库存为：" + invMeasured);
     }
 
     private void openLock() {
