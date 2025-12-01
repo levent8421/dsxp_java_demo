@@ -43,6 +43,7 @@ import com.monolith.dsxp.warehouse.worker.WarehouseDau;
 import com.monolith.dsxpdemo.adapter.WarehouseComponentListAdapter;
 import com.monolith.dsxpdemo.dsxp.DeviceManager;
 import com.monolith.dsxpdemo.dto.WarehouseComponentListItem;
+import com.monolith.dsxpdemo.run.ComponentHealthStateRunner;
 import com.monolith.dsxpdemo.run.DeviceHealthStateRunner;
 import com.monolith.dsxpdemo.util.ActivityUtils;
 import com.monolith.dsxpdemo.util.AlertUtils;
@@ -68,6 +69,7 @@ public class DashboardActivity extends AppCompatActivity {
 
     private WarehouseComponentListAdapter componentListAdapter;
     private final Handler handler = new Handler();
+    //private final ComponentHealthStateRunner healthStateRunner = new ComponentHealthStateRunner();
     private final DeviceHealthStateRunner healthStateRunner = new DeviceHealthStateRunner();
 
     @Override
