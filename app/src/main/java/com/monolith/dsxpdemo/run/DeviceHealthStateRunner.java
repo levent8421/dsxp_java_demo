@@ -79,6 +79,7 @@ public class DeviceHealthStateRunner implements Runnable {
             DsxpDeviceWorker deviceWorker = deviceNodeEntry.getValue().getDeviceWorker();
             DeviceWorkerState state = deviceWorker.state();
 
+
             if (deviceWorker instanceof StubDsxpDeviceWorker || state == null) {
                 System.out.println("设备：" + deviceDef.identifier() + " 初始化异常");
                 continue;

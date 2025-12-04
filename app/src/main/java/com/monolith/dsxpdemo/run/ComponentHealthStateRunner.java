@@ -39,7 +39,10 @@ public class ComponentHealthStateRunner implements Runnable {
                 //这边一直在获取设备的健康度 生产环境中可以搞个回调给页面展示 也可以在到达某个阈值时发出警报给上位机
                 for (WarehouseComponent component : allComponents) {
                     if (component instanceof ShelfBin) {
-                        boolean online = component.getState().getHardwareState().isOnline();
+                        boolean online = component.getState().getHardwareState().isInvDauOnline() &&
+                                component.getState().getHardwareState().isInteractionDauOnline() &&
+                                component.getState().getHardwareState().isIdentificationDauOnline() &&
+                                component.getState().getHardwareState().isAccessControlDauOnline();
                         System.out.println("库位：" + component.code().asString() + "是否在线：" + online);
                         List<WarehouseDau> daus = component.getHardwareBinding().getDaus();
                         for (WarehouseDau dau : daus) {

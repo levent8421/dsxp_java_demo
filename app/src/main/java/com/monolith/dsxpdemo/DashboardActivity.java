@@ -20,6 +20,7 @@ import com.monolith.dsxp.event.dto.DauConnectionEventData;
 import com.monolith.dsxp.jtrfid.RfidEvents;
 import com.monolith.dsxp.jtrfid.worker.dto.HFDauData;
 import com.monolith.dsxp.tree.DsxpConnectionNode;
+import com.monolith.dsxp.tree.DsxpDauNode;
 import com.monolith.dsxp.tree.DsxpDeviceTree;
 import com.monolith.dsxp.tree.DsxpDeviceTreeNode;
 import com.monolith.dsxp.tree.DsxpDriverGroupNode;
@@ -32,6 +33,7 @@ import com.monolith.dsxp.warehouse.component.ShelfLayer;
 import com.monolith.dsxp.warehouse.component.WarehouseComponent;
 import com.monolith.dsxp.warehouse.component.conf.WarehouseSku;
 import com.monolith.dsxp.warehouse.event.AccessControlStateEvent;
+import com.monolith.dsxp.warehouse.event.HardwareStateEvent;
 import com.monolith.dsxp.warehouse.event.InventoryUpdateEvent;
 import com.monolith.dsxp.warehouse.event.WarehouseEventIds;
 import com.monolith.dsxp.warehouse.utils.ComponentCode;
@@ -138,6 +140,24 @@ public class DashboardActivity extends AppCompatActivity {
         eventContext.registerHandler(WarehouseEventIds.ACCESS_CONTROL_STATE, (node, event) -> {
             AccessControlStateEvent controlStateEvent = (AccessControlStateEvent) event.getData();
             System.out.println(controlStateEvent.getCode().asString() + "状态变更 ：===》" + controlStateEvent.getStateCode());
+        });
+        //设备在线离线状态变更
+        eventContext.registerHandler(WarehouseEventIds.HARDWARE_STATE, (node, event) -> {
+            HardwareStateEvent eventData = (HardwareStateEvent) event.getData();
+            ComponentCode code = eventData.getCode();
+            if (eventData.isInvDauStateUpdated()) {
+                System.out.println(code.asString() + " 重力设备在线状态变更 ：===》" + eventData.isInvDauOnline());
+            }
+            if (eventData.isAccessControlDauStateUpdated()) {
+                System.out.println(code.asString() + " 锁/闸机在线状态变更 ：===》" + eventData.isAccessControlDauOnline());
+            }
+            if (eventData.isIdentificationDauStateUpdated()) {
+                DsxpDauNode dauStateFrom = eventData.getIdentificationDauStateFrom();
+                System.out.println(code.asString() + " 身份识别设备在线状态变更 ：===》" + eventData.isIdentificationDauOnline() + " 设备： " + dauStateFrom.getDauDef().identifier());
+            }
+            if (eventData.isInteractionDauStateUpdated()) {
+                System.out.println(code.asString() + " 交互类设备(灯光)在线状态变更 ：===》" + eventData.isInteractionDauOnline());
+            }
         });
     }
 
