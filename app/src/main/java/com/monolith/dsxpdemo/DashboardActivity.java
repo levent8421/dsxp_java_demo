@@ -13,10 +13,12 @@ import com.monolith.dsxp.define.ds3p.Ds3pUrl;
 import com.monolith.dsxp.define.ds3p.Ds3pUrlUtils;
 import com.monolith.dsxp.driver.DsxpBroadcastDeviceWorker;
 import com.monolith.dsxp.driver.DsxpConnectionWorker;
+import com.monolith.dsxp.driver.DsxpDauWorker;
 import com.monolith.dsxp.driver.DsxpWorker;
 import com.monolith.dsxp.event.DsxpEventContext;
 import com.monolith.dsxp.event.DsxpEventIds;
 import com.monolith.dsxp.event.dto.DauConnectionEventData;
+import com.monolith.dsxp.event.dto.DauTickEventData;
 import com.monolith.dsxp.jtrfid.RfidEvents;
 import com.monolith.dsxp.jtrfid.worker.dto.HFDauData;
 import com.monolith.dsxp.tree.DsxpConnectionNode;
@@ -32,6 +34,7 @@ import com.monolith.dsxp.warehouse.component.ShelfBin;
 import com.monolith.dsxp.warehouse.component.ShelfLayer;
 import com.monolith.dsxp.warehouse.component.WarehouseComponent;
 import com.monolith.dsxp.warehouse.component.conf.WarehouseSku;
+import com.monolith.dsxp.warehouse.component.state.ComHardwareState;
 import com.monolith.dsxp.warehouse.event.AccessControlStateEvent;
 import com.monolith.dsxp.warehouse.event.HardwareStateEvent;
 import com.monolith.dsxp.warehouse.event.InventoryUpdateEvent;
@@ -159,6 +162,28 @@ public class DashboardActivity extends AppCompatActivity {
                 System.out.println(code.asString() + " 交互类设备(灯光)在线状态变更 ：===》" + eventData.isInteractionDauOnline());
             }
         });
+        //轮询回调
+        eventContext.registerHandler(DsxpEventIds.DAU_TICK, (node, event) -> {
+            DauTickEventData tickEventData = (DauTickEventData) event.getData();
+            boolean firstTick = tickEventData.isFirstTick();
+            DsxpDauWorker dauWorker = (DsxpDauWorker) node.getWorker();
+            boolean online = dauWorker.state().isOnline();
+            WarehouseComponent component = WarehouseComponentUtils.getComponentFromNode((DsxpDauNode) node);
+            if (component == null) {
+                return;
+            }
+            ComHardwareState hardwareState = component.getState().getHardwareState();
+            if (firstTick) {
+                synchronized (System.out) {
+                    System.out.println("-----------------------");
+                    System.out.println(node.identifier() + " ===> READY!, worker online : " + online);
+                    System.out.println("invOnline : " + hardwareState.isInvDauOnline());
+                    System.out.println("accOnline : " + hardwareState.isAccessControlDauOnline());
+                    System.out.println("intOnline : " + hardwareState.isInteractionDauOnline());
+                    System.out.println("idOnline : " + hardwareState.isIdentificationDauOnline());
+                }
+            }
+        });
     }
 
     private void showDeviceTree() {
@@ -237,7 +262,7 @@ public class DashboardActivity extends AppCompatActivity {
         /**
          * 这边我偷懒直接在驱动启动后就执行 实际项目中 页面需要的时候再启动 页面不需要的时候关掉 减少资源开销 上位机主动获取的时候主动调一下run中方法返回参数即可
          */
-        healthStateRunner.run();
+        //healthStateRunner.run();
     }
 
     private void stopDriver() {
