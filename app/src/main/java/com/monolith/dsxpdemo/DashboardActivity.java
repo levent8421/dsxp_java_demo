@@ -17,8 +17,8 @@ import com.monolith.dsxp.driver.DsxpDauWorker;
 import com.monolith.dsxp.driver.DsxpWorker;
 import com.monolith.dsxp.event.DsxpEventContext;
 import com.monolith.dsxp.event.DsxpEventIds;
-import com.monolith.dsxp.event.dto.DauConnectionEventData;
 import com.monolith.dsxp.event.dto.DauTickEventData;
+import com.monolith.dsxp.event.dto.DriverReadyEventData;
 import com.monolith.dsxp.jtrfid.RfidEvents;
 import com.monolith.dsxp.jtrfid.worker.dto.HFDauData;
 import com.monolith.dsxp.tree.DsxpConnectionNode;
@@ -34,7 +34,6 @@ import com.monolith.dsxp.warehouse.component.ShelfBin;
 import com.monolith.dsxp.warehouse.component.ShelfLayer;
 import com.monolith.dsxp.warehouse.component.WarehouseComponent;
 import com.monolith.dsxp.warehouse.component.conf.WarehouseSku;
-import com.monolith.dsxp.warehouse.component.state.ComHardwareState;
 import com.monolith.dsxp.warehouse.event.AccessControlStateEvent;
 import com.monolith.dsxp.warehouse.event.HardwareStateEvent;
 import com.monolith.dsxp.warehouse.event.InventoryUpdateEvent;
@@ -45,6 +44,7 @@ import com.monolith.dsxp.warehouse.utils.WarehouseComponentUtils;
 import com.monolith.dsxp.warehouse.worker.AccessControlDau;
 import com.monolith.dsxp.warehouse.worker.DauContainer;
 import com.monolith.dsxp.warehouse.worker.WarehouseDau;
+import com.monolith.dsxp.warehouse.worker.WarehouseDauInfo;
 import com.monolith.dsxpdemo.adapter.WarehouseComponentListAdapter;
 import com.monolith.dsxpdemo.dsxp.DeviceManager;
 import com.monolith.dsxpdemo.dto.WarehouseComponentListItem;
@@ -102,10 +102,6 @@ public class DashboardActivity extends AppCompatActivity {
         DsxpDeviceTree deviceTree = DeviceManager.INSTANCE.getDeviceTree();
         DsxpEventContext eventContext = deviceTree.getEventContext();
         // 注册连接状态变化事件
-        eventContext.registerHandler(DsxpEventIds.DAU_CONNECTION_STATE, (node, event) -> {
-            DauConnectionEventData data = (DauConnectionEventData) event.getData();
-            onComponentStateUpdate(node, data.isOnline());
-        });
         // 注册标准库存变化事件(库存变化就看这个就行了)
         eventContext.registerHandler(WarehouseEventIds.INVENTORY_UPDATE, (node, event) -> {
             InventoryUpdateEvent data = (InventoryUpdateEvent) event.getData();
@@ -148,21 +144,13 @@ public class DashboardActivity extends AppCompatActivity {
         eventContext.registerHandler(WarehouseEventIds.HARDWARE_STATE, (node, event) -> {
             HardwareStateEvent eventData = (HardwareStateEvent) event.getData();
             ComponentCode code = eventData.getCode();
-            if (eventData.isInvDauStateUpdated()) {
-                System.out.println(code.asString() + " 重力设备在线状态变更 ：===》" + eventData.isInvDauOnline());
-            }
-            if (eventData.isAccessControlDauStateUpdated()) {
-                System.out.println(code.asString() + " 锁/闸机在线状态变更 ：===》" + eventData.isAccessControlDauOnline());
-            }
-            if (eventData.isIdentificationDauStateUpdated()) {
-                DsxpDauNode dauStateFrom = eventData.getIdentificationDauStateFrom();
-                System.out.println(code.asString() + " 身份识别设备在线状态变更 ：===》" + eventData.isIdentificationDauOnline() + " 设备： " + dauStateFrom.getDauDef().identifier());
-            }
-            if (eventData.isInteractionDauStateUpdated()) {
-                System.out.println(code.asString() + " 交互类设备(灯光)在线状态变更 ：===》" + eventData.isInteractionDauOnline());
+            List<HardwareStateEvent.Item> items = eventData.getItems();
+            for (HardwareStateEvent.Item item : items) {
+                WarehouseDau dau = item.getDau();
+                System.out.println(dau.node().identifier() + " 设备在线状态变更: " + item.isOnline());
             }
         });
-        //轮询回调
+        //dau 轮询回调
         eventContext.registerHandler(DsxpEventIds.DAU_TICK, (node, event) -> {
             DauTickEventData tickEventData = (DauTickEventData) event.getData();
             boolean firstTick = tickEventData.isFirstTick();
@@ -172,17 +160,14 @@ public class DashboardActivity extends AppCompatActivity {
             if (component == null) {
                 return;
             }
-            ComHardwareState hardwareState = component.getState().getHardwareState();
-            if (firstTick) {
-                synchronized (System.out) {
-                    System.out.println("-----------------------");
-                    System.out.println(node.identifier() + " ===> READY!, worker online : " + online);
-                    System.out.println("invOnline : " + hardwareState.isInvDauOnline());
-                    System.out.println("accOnline : " + hardwareState.isAccessControlDauOnline());
-                    System.out.println("intOnline : " + hardwareState.isInteractionDauOnline());
-                    System.out.println("idOnline : " + hardwareState.isIdentificationDauOnline());
-                }
+        });
+        // 驱动初始化化完成回调
+        eventContext.registerHandler(DsxpEventIds.DRIVER_READY, (node, event) -> {
+            DriverReadyEventData readyEventData = (DriverReadyEventData) event.getData();
+            if (!DeviceTreeUtils.isAllDriverReady(DeviceManager.INSTANCE.getDeviceTree())) {
+                return;
             }
+            System.out.println("all device init ready !");
         });
     }
 
@@ -329,9 +314,10 @@ public class DashboardActivity extends AppCompatActivity {
             return;
         }
         //打开这个code下所有锁
-        for (AccessControlDau value : accessControlDaus.values()) {
-            if (value instanceof DspLockerDauWorker) {
-                DspLockerDauWorker lockerDauWorker = (DspLockerDauWorker) value;
+        for (WarehouseDauInfo<AccessControlDau> value : accessControlDaus.values()) {
+            AccessControlDau dau = value.getDau();
+            if (dau instanceof DspLockerDauWorker) {
+                DspLockerDauWorker lockerDauWorker = (DspLockerDauWorker) dau;
                 try {
                     lockerDauWorker.unlock();
                 } catch (Exception e) {
@@ -350,9 +336,10 @@ public class DashboardActivity extends AppCompatActivity {
             return;
         }
         //关闭这个code下所有锁
-        for (AccessControlDau value : accessControlDaus.values()) {
-            if (value instanceof DspLockerDauWorker) {
-                DspLockerDauWorker lockerDauWorker = (DspLockerDauWorker) value;
+        for (WarehouseDauInfo<AccessControlDau> value : accessControlDaus.values()) {
+            AccessControlDau dau = value.getDau();
+            if (dau instanceof DspLockerDauWorker) {
+                DspLockerDauWorker lockerDauWorker = (DspLockerDauWorker) dau;
                 try {
                     lockerDauWorker.lock();
                 } catch (Exception e) {

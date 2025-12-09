@@ -9,6 +9,7 @@ import com.monolith.dsxp.warehouse.WarehouseManager;
 import com.monolith.dsxp.warehouse.component.ShelfBin;
 import com.monolith.dsxp.warehouse.component.WarehouseComponent;
 import com.monolith.dsxp.warehouse.worker.WarehouseDau;
+import com.monolith.dsxp.warehouse.worker.WarehouseDauInfo;
 import com.monolith.dsxpdemo.dsxp.DeviceManager;
 import com.monolith.dsxpdemo.util.ThreadUtils;
 
@@ -39,11 +40,16 @@ public class ComponentHealthStateRunner implements Runnable {
                 //这边一直在获取设备的健康度 生产环境中可以搞个回调给页面展示 也可以在到达某个阈值时发出警报给上位机
                 for (WarehouseComponent component : allComponents) {
                     if (component instanceof ShelfBin) {
-                        boolean online = component.getState().getHardwareState().isInvDauOnline() &&
-                                component.getState().getHardwareState().isInteractionDauOnline() &&
-                                component.getState().getHardwareState().isIdentificationDauOnline() &&
-                                component.getState().getHardwareState().isAccessControlDauOnline();
-                        System.out.println("库位：" + component.code().asString() + "是否在线：" + online);
+                        List<WarehouseDauInfo<? extends WarehouseDau>> dauInfos = component.getHardwareBinding().getDauInfos();
+                        boolean isOnline = true;
+                        for (WarehouseDauInfo<? extends WarehouseDau> dauInfo : dauInfos) {
+                            boolean online = dauInfo.isOnline();
+                            if (online) {
+                                continue;
+                            }
+                            isOnline = false;
+                        }
+                        System.out.println("库位：" + component.code().asString() + "是否在线：" + isOnline);
                         List<WarehouseDau> daus = component.getHardwareBinding().getDaus();
                         for (WarehouseDau dau : daus) {
                             DsxpDeviceTreeNode node = dau.node();
