@@ -41,8 +41,10 @@ import com.monolith.dsxp.warehouse.event.WarehouseEventIds;
 import com.monolith.dsxp.warehouse.utils.ComponentCode;
 import com.monolith.dsxp.warehouse.utils.ComponentCodes;
 import com.monolith.dsxp.warehouse.utils.WarehouseComponentUtils;
+import com.monolith.dsxp.warehouse.utils.WarehouseDauUtils;
 import com.monolith.dsxp.warehouse.worker.AccessControlDau;
 import com.monolith.dsxp.warehouse.worker.DauContainer;
+import com.monolith.dsxp.warehouse.worker.InventoryDau;
 import com.monolith.dsxp.warehouse.worker.WarehouseDau;
 import com.monolith.dsxp.warehouse.worker.WarehouseDauInfo;
 import com.monolith.dsxpdemo.adapter.WarehouseComponentListAdapter;
@@ -147,7 +149,18 @@ public class DashboardActivity extends AppCompatActivity {
             List<HardwareStateEvent.Item> items = eventData.getItems();
             for (HardwareStateEvent.Item item : items) {
                 WarehouseDau dau = item.getDau();
-                System.out.println(dau.node().identifier() + " 设备在线状态变更: " + item.isOnline());
+                if (WarehouseDauUtils.isAccessControlDau(dau)){
+                    System.out.println(dau.node().identifier() + " 锁、门禁设备在线状态变更: " + item.isOnline());
+                }
+                if (WarehouseDauUtils.isIdentificationDau(dau)){
+                    System.out.println(dau.node().identifier() + " 身份识别设备在线状态变更: " + item.isOnline());
+                }
+                if (WarehouseDauUtils.isInteractionDau(dau)){
+                    System.out.println(dau.node().identifier() + " 交互设备在线状态变更: " + item.isOnline());
+                }
+                if (WarehouseDauUtils.isInventoryDau(dau)){
+                    System.out.println(dau.node().identifier() + " 库存设备在线状态变更: " + item.isOnline());
+                }
             }
         });
         //dau 轮询回调
