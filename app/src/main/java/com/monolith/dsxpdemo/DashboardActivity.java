@@ -44,7 +44,6 @@ import com.monolith.dsxp.warehouse.utils.WarehouseComponentUtils;
 import com.monolith.dsxp.warehouse.utils.WarehouseDauUtils;
 import com.monolith.dsxp.warehouse.worker.AccessControlDau;
 import com.monolith.dsxp.warehouse.worker.DauContainer;
-import com.monolith.dsxp.warehouse.worker.InventoryDau;
 import com.monolith.dsxp.warehouse.worker.WarehouseDau;
 import com.monolith.dsxp.warehouse.worker.WarehouseDauInfo;
 import com.monolith.dsxpdemo.adapter.WarehouseComponentListAdapter;
@@ -77,6 +76,7 @@ public class DashboardActivity extends AppCompatActivity {
     private final Handler handler = new Handler();
     //private final ComponentHealthStateRunner healthStateRunner = new ComponentHealthStateRunner();
     private final DeviceHealthStateRunner healthStateRunner = new DeviceHealthStateRunner();
+    private long time;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -149,16 +149,16 @@ public class DashboardActivity extends AppCompatActivity {
             List<HardwareStateEvent.Item> items = eventData.getItems();
             for (HardwareStateEvent.Item item : items) {
                 WarehouseDau dau = item.getDau();
-                if (WarehouseDauUtils.isAccessControlDau(dau)){
+                if (WarehouseDauUtils.isAccessControlDau(dau)) {
                     System.out.println(dau.node().identifier() + " 锁、门禁设备在线状态变更: " + item.isOnline());
                 }
-                if (WarehouseDauUtils.isIdentificationDau(dau)){
+                if (WarehouseDauUtils.isIdentificationDau(dau)) {
                     System.out.println(dau.node().identifier() + " 身份识别设备在线状态变更: " + item.isOnline());
                 }
-                if (WarehouseDauUtils.isInteractionDau(dau)){
+                if (WarehouseDauUtils.isInteractionDau(dau)) {
                     System.out.println(dau.node().identifier() + " 交互设备在线状态变更: " + item.isOnline());
                 }
-                if (WarehouseDauUtils.isInventoryDau(dau)){
+                if (WarehouseDauUtils.isInventoryDau(dau)) {
                     System.out.println(dau.node().identifier() + " 库存设备在线状态变更: " + item.isOnline());
                 }
             }
@@ -180,7 +180,8 @@ public class DashboardActivity extends AppCompatActivity {
             if (!DeviceTreeUtils.isAllDriverReady(DeviceManager.INSTANCE.getDeviceTree())) {
                 return;
             }
-            System.out.println("all device init ready !");
+            long l = System.currentTimeMillis() - time;
+            System.out.println("all device init ready ! time: " + l);
         });
     }
 
@@ -256,6 +257,7 @@ public class DashboardActivity extends AppCompatActivity {
 
     private void startDriver() {
         DeviceManager deviceManager = DeviceManager.INSTANCE;
+        time = System.currentTimeMillis();
         deviceManager.start();
         /**
          * 这边我偷懒直接在驱动启动后就执行 实际项目中 页面需要的时候再启动 页面不需要的时候关掉 减少资源开销 上位机主动获取的时候主动调一下run中方法返回参数即可
