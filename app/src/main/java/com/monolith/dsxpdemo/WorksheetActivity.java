@@ -19,6 +19,7 @@ import com.monolith.dsxp.warehouse.component.conf.WarehouseSku;
 import com.monolith.dsxp.warehouse.utils.ComponentCodes;
 import com.monolith.dsxp.warehouse.utils.WarehouseComponentUtils;
 import com.monolith.dsxp.warehouse.utils.WorksheetUtils;
+import com.monolith.dsxp.warehouse.worker.WorksheetFinishReasons;
 import com.monolith.dsxp.warehouse.worksheet.Worksheet;
 import com.monolith.dsxp.warehouse.worksheet.WorksheetConstants;
 import com.monolith.dsxp.warehouse.worksheet.WorksheetEngine;
@@ -258,7 +259,7 @@ public class WorksheetActivity extends AppCompatActivity implements WorksheetLif
 
     private void finishWorksheet() {
         try {
-            worksheetEngine.stopWorksheet("worksheetId");
+            worksheetEngine.stopWorksheet("worksheetId", WorksheetFinishReasons.MANUAL);
             createModelMap.clear();
             runningModelMap.clear();
             clearUI();

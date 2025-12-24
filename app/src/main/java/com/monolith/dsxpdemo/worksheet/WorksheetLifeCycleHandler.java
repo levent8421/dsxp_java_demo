@@ -51,6 +51,11 @@ public class WorksheetLifeCycleHandler implements WorksheetListener {
     }
 
     @Override
+    public void onWorksheetFinishRequested(WorksheetPerformTask worksheetPerformTask) {
+        // TODO 工单关闭请求
+    }
+
+    @Override
     public void onWorksheetFinish(WorksheetPerformTask worksheetPerformTask) {
         // TODO 工单关闭成功回调业务
     }
@@ -81,6 +86,11 @@ public class WorksheetLifeCycleHandler implements WorksheetListener {
         //库存数量异常：WorksheetConstants.getInventoryStateName(state.getInventoryState())
         //非法操作异常：WorksheetConstants.getBinMatchName(state.getBinMatchState())
         //硬件异常：itemPerformTask.getErrors().isEmpty()
+    }
+
+    @Override
+    public void onWorksheetItemFinishRequested(WorksheetItemPerformTask itemPerformTask) {
+
     }
 
     @NonNull

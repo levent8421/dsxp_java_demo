@@ -28,6 +28,7 @@ import com.monolith.dsxp.tree.DsxpDeviceTreeNode;
 import com.monolith.dsxp.tree.DsxpDriverGroupNode;
 import com.monolith.dsxp.util.DeviceTreeUtils;
 import com.monolith.dsxp.util.ListUtils;
+import com.monolith.dsxp.util.ThreadUtils;
 import com.monolith.dsxp.warehouse.WarehouseManager;
 import com.monolith.dsxp.warehouse.component.Shelf;
 import com.monolith.dsxp.warehouse.component.ShelfBin;
@@ -49,9 +50,11 @@ import com.monolith.dsxp.warehouse.worker.WarehouseDauInfo;
 import com.monolith.dsxpdemo.adapter.WarehouseComponentListAdapter;
 import com.monolith.dsxpdemo.dsxp.DeviceManager;
 import com.monolith.dsxpdemo.dto.WarehouseComponentListItem;
+import com.monolith.dsxpdemo.dto.WorksheetItemDTO;
 import com.monolith.dsxpdemo.run.DeviceHealthStateRunner;
 import com.monolith.dsxpdemo.util.ActivityUtils;
 import com.monolith.dsxpdemo.util.AlertUtils;
+import com.monolith.dsxpdemo.util.WorksheetUtils;
 import com.monolith.mit.dsp.MitDspEvents;
 import com.monolith.mit.dsp.worker.dau.io.DspLockerDauWorker;
 import com.monolith.mit.dsp.worker.dau.wt.event.TraceWeightUpdateEventData;
@@ -95,7 +98,7 @@ public class DashboardActivity extends AppCompatActivity {
         //findViewById(R.id.btn_do_zero).setOnClickListener(v -> doZeroAll());
         findViewById(R.id.btn_open_lock).setOnClickListener(v -> openLock());
         findViewById(R.id.btn_close_lock).setOnClickListener(v -> closeLock());
-        findViewById(R.id.btn_worksheet).setOnClickListener(v -> toWorksheet());
+        findViewById(R.id.btn_worksheet).setOnClickListener(v -> worksheetControl());
         this.rvComponents = findViewById(R.id.rvComponents);
         this.rvComponents.setLayoutManager(new LinearLayoutManager(this));
     }
@@ -398,5 +401,17 @@ public class DashboardActivity extends AppCompatActivity {
             }
         }
         return -1;
+    }
+
+    private void worksheetControl() {
+        List<WorksheetItemDTO> list = new ArrayList<>();
+        WorksheetItemDTO worksheetItemDTO = new WorksheetItemDTO();
+        worksheetItemDTO.setBinCode("L1-1-2");
+        worksheetItemDTO.setPlanQty(new BigDecimal(5));
+        worksheetItemDTO.setCompleteQty(new BigDecimal(1));
+        list.add(worksheetItemDTO);
+        WorksheetUtils.startWorksheet(list);
+        ThreadUtils.sleepMs(4000);
+        WorksheetUtils.stopWorksheet(list);
     }
 }
