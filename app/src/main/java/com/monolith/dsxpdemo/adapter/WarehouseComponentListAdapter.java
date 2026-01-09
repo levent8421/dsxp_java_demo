@@ -151,7 +151,7 @@ public class WarehouseComponentListAdapter extends RecyclerView.Adapter {
     private void updateWarehouseProp(String binCode, Map<String, String> map) {
         WarehouseManager warehouseManager = DeviceManager.INSTANCE.getWarehouseManager();
         WarehouseComponent component = warehouseManager.findComponent(ComponentCodes.parseCode(binCode));
-        component.setProps(map);
+        component.loadProps(map);
     }
 
     @Override

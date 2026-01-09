@@ -63,6 +63,7 @@ import com.monolith.mit.dsp.worker.device.broadcast.DspBroadcastDeviceWorker;
 
 import java.math.BigDecimal;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -185,6 +186,8 @@ public class DashboardActivity extends AppCompatActivity {
             }
             long l = System.currentTimeMillis() - time;
             System.out.println("all device init ready ! time: " + l);
+
+            getInventory();
         });
     }
 
@@ -248,6 +251,18 @@ public class DashboardActivity extends AppCompatActivity {
     private void refreshBinList() {
         // 从驱动中获取各个库位、层、货架的状态
         WarehouseManager warehouseManager = DeviceManager.INSTANCE.getWarehouseManager();
+        List<WarehouseComponent> allComponents = warehouseManager.getAllComponents();
+        int i = 1;
+        for (WarehouseComponent component : allComponents) {
+            if (component instanceof ShelfBin) {
+                Map<String, String> map = new HashMap<>();
+                map.put("sku_name", "L1-1-" + i);
+                map.put("sku_no", String.valueOf(i));
+                map.put("sku_apw", "0.01");
+                warehouseManager.loadComponentProps(component.code(), map);
+                i++;
+            }
+        }
         List<WarehouseComponent> components = WarehouseComponentUtils.getAllChildren(warehouseManager.getWarehouse());
         List<WarehouseComponentListItem> items = ListUtils.newArrayList();
         for (WarehouseComponent component : components) {
@@ -286,7 +301,7 @@ public class DashboardActivity extends AppCompatActivity {
                 if (broadcastDevice instanceof DspBroadcastDeviceWorker) {
                     DspBroadcastDeviceWorker broadcastDeviceWorker = (DspBroadcastDeviceWorker) broadcastDevice;
                     try {
-                        broadcastDeviceWorker.broadcastDoZero();
+                        //broadcastDeviceWorker.broadcastDoZero();
                     } catch (Exception e) {
                         e.printStackTrace();
                     }
