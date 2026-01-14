@@ -45,6 +45,7 @@ import com.monolith.dsxp.warehouse.utils.WarehouseComponentUtils;
 import com.monolith.dsxp.warehouse.utils.WarehouseDauUtils;
 import com.monolith.dsxp.warehouse.worker.AccessControlDau;
 import com.monolith.dsxp.warehouse.worker.DauContainer;
+import com.monolith.dsxp.warehouse.worker.HardwareBinding;
 import com.monolith.dsxp.warehouse.worker.WarehouseDau;
 import com.monolith.dsxp.warehouse.worker.WarehouseDauInfo;
 import com.monolith.dsxpdemo.adapter.WarehouseComponentListAdapter;
@@ -63,6 +64,7 @@ import com.monolith.mit.dsp.worker.device.broadcast.DspBroadcastDeviceWorker;
 
 import java.math.BigDecimal;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -144,7 +146,7 @@ public class DashboardActivity extends AppCompatActivity {
          */
         eventContext.registerHandler(WarehouseEventIds.ACCESS_CONTROL_STATE, (node, event) -> {
             AccessControlStateEvent controlStateEvent = (AccessControlStateEvent) event.getData();
-            System.out.println(controlStateEvent.getCode().asString() + "状态变更 ：===》" + controlStateEvent.getStateCode());
+            System.out.println(controlStateEvent.getCode().asString() + "锁状态变更 ：===》" + controlStateEvent.getStateCode());
         });
         //设备在线离线状态变更
         eventContext.registerHandler(WarehouseEventIds.HARDWARE_STATE, (node, event) -> {
@@ -333,14 +335,24 @@ public class DashboardActivity extends AppCompatActivity {
 
     private void getDauInventory(ShelfBin shelfBin) {
         String binCode = shelfBin.code().asString();
+        HardwareBinding hardwareBinding = shelfBin.getHardwareBinding();
+        Collection<WarehouseDau> warehouseDaus = hardwareBinding.getDaus();
+        boolean dauOnline = true;
+        for (WarehouseDau warehouseDau : warehouseDaus) {
+            boolean online = warehouseDau.state().isOnline();
+            if (online) {
+                continue;
+            }
+            dauOnline = false;
+        }
         BigDecimal inventory = shelfBin.getState().getInventoryState().getInvEnd();
         BigDecimal invMeasured = shelfBin.getState().getInventoryState().getInvMeasuredEnd();
-        System.out.println("库位：" + binCode + " 当前跟踪库存为：" + inventory + " 当前测量库存为：" + invMeasured);
+        System.out.println("库位：" + binCode + " isOnline: " + dauOnline + " 当前跟踪库存为：" + inventory + " 当前测量库存为：" + invMeasured);
     }
 
     private void openLock() {
         //这边传入想开的锁的code
-        WarehouseComponent component = DeviceManager.INSTANCE.getWarehouseManager().findComponent(ComponentCodes.parseCode("L1-1-1"));
+        WarehouseComponent component = DeviceManager.INSTANCE.getWarehouseManager().findComponent(ComponentCodes.parseCode("L1"));
         DauContainer<AccessControlDau> accessControlDaus = component.getHardwareBinding().getAccessControlDaus();
         if (accessControlDaus.isEmpty()) {
             System.out.println("no this lock");
