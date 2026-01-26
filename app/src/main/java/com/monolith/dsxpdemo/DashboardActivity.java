@@ -9,12 +9,15 @@ import androidx.recyclerview.widget.RecyclerView;
 
 import com.monolith.dsxp.define.DsxpConnectionDefinition;
 import com.monolith.dsxp.define.DsxpDriverGroupDefinition;
+import com.monolith.dsxp.define.DsxpNodeDefinition;
 import com.monolith.dsxp.define.ds3p.Ds3pUrl;
 import com.monolith.dsxp.define.ds3p.Ds3pUrlUtils;
 import com.monolith.dsxp.driver.DsxpBroadcastDeviceWorker;
 import com.monolith.dsxp.driver.DsxpConnectionWorker;
 import com.monolith.dsxp.driver.DsxpDauWorker;
+import com.monolith.dsxp.driver.DsxpDeviceWorker;
 import com.monolith.dsxp.driver.DsxpWorker;
+import com.monolith.dsxp.driver.state.DeviceWorkerState;
 import com.monolith.dsxp.event.DsxpEventContext;
 import com.monolith.dsxp.event.DsxpEventIds;
 import com.monolith.dsxp.event.dto.DauTickEventData;
@@ -28,6 +31,7 @@ import com.monolith.dsxp.tree.DsxpDeviceTreeNode;
 import com.monolith.dsxp.tree.DsxpDriverGroupNode;
 import com.monolith.dsxp.util.DeviceTreeUtils;
 import com.monolith.dsxp.util.ListUtils;
+import com.monolith.dsxp.util.PacketCounter;
 import com.monolith.dsxp.util.ThreadUtils;
 import com.monolith.dsxp.warehouse.WarehouseManager;
 import com.monolith.dsxp.warehouse.component.Shelf;
@@ -58,6 +62,7 @@ import com.monolith.dsxpdemo.util.AlertUtils;
 import com.monolith.dsxpdemo.util.WorksheetUtils;
 import com.monolith.mit.dsp.MitDspEvents;
 import com.monolith.mit.dsp.worker.dau.io.DspLockerDauWorker;
+import com.monolith.mit.dsp.worker.dau.wt.event.HighResolutionWeightEventData;
 import com.monolith.mit.dsp.worker.dau.wt.event.TraceWeightUpdateEventData;
 import com.monolith.mit.dsp.worker.dau.wt.event.WeightInventoryUpdateEventData;
 import com.monolith.mit.dsp.worker.device.broadcast.DspBroadcastDeviceWorker;
@@ -98,7 +103,7 @@ public class DashboardActivity extends AppCompatActivity {
         findViewById(R.id.btn_build_driver).setOnClickListener(v -> buildDriver());
         findViewById(R.id.btn_start).setOnClickListener(v -> startDriver());
         findViewById(R.id.btn_stop).setOnClickListener(v -> stopDriver());
-        //findViewById(R.id.btn_do_zero).setOnClickListener(v -> doZeroAll());
+        findViewById(R.id.btn_offline_check).setOnClickListener(v -> filterOfflineDevice());
         findViewById(R.id.btn_open_lock).setOnClickListener(v -> openLock());
         findViewById(R.id.btn_close_lock).setOnClickListener(v -> closeLock());
         findViewById(R.id.btn_worksheet).setOnClickListener(v -> worksheetControl());
@@ -191,6 +196,10 @@ public class DashboardActivity extends AppCompatActivity {
 
             getInventory();
         });
+        eventContext.registerHandler(MitDspEvents.HIGH_RESOLUTION_WEIGHT, (node, event) -> {
+            HighResolutionWeightEventData weightEventData = (HighResolutionWeightEventData) event.getData();
+            System.out.println("高精度重量变化 ===》 " + weightEventData.getCode().asString() + " 净重: " + weightEventData.getNetWeight() + " 毛重: " + weightEventData.getGrossWeight() + " 皮重: " + weightEventData.getTareWeight());
+        });
     }
 
     private void showDeviceTree() {
@@ -254,15 +263,13 @@ public class DashboardActivity extends AppCompatActivity {
         // 从驱动中获取各个库位、层、货架的状态
         WarehouseManager warehouseManager = DeviceManager.INSTANCE.getWarehouseManager();
         List<WarehouseComponent> allComponents = warehouseManager.getAllComponents();
-        int i = 1;
         for (WarehouseComponent component : allComponents) {
             if (component instanceof ShelfBin) {
                 Map<String, String> map = new HashMap<>();
-                map.put("sku_name", "L1-1-" + i);
-                map.put("sku_no", String.valueOf(i));
-                map.put("sku_apw", "0.01");
+                map.put("sku_name", component.code().asString());
+                map.put("sku_no", component.code().asString());
+                map.put("sku_apw", "0.00");
                 warehouseManager.loadComponentProps(component.code(), map);
-                i++;
             }
         }
         List<WarehouseComponent> components = WarehouseComponentUtils.getAllChildren(warehouseManager.getWarehouse());
@@ -390,6 +397,45 @@ public class DashboardActivity extends AppCompatActivity {
                 } catch (Exception e) {
                     break;
                 }
+            }
+        }
+    }
+
+    private void filterOfflineDevice() {
+        List<WarehouseComponent> allComponents = DeviceManager.INSTANCE.getWarehouseManager().getAllComponents();
+        for (WarehouseComponent component : allComponents) {
+            if (component instanceof ShelfBin){
+                Collection<WarehouseDauInfo<? extends WarehouseDau>> dauInfos = component.getHardwareBinding().getDauInfos();
+                for (WarehouseDauInfo<? extends WarehouseDau> dauInfo : dauInfos) {
+                    if (!dauInfo.isOnline()){
+                        DsxpDeviceTreeNode node = dauInfo.getDau().node();
+                        Map<? extends DsxpNodeDefinition, ? extends DsxpDeviceTreeNode> children = node.getChildren();
+                        recursiveTraversalDevice(children);
+                    }
+                }
+            }
+        }
+    }
+
+    private void recursiveTraversalDevice(Map<? extends DsxpNodeDefinition, ? extends DsxpDeviceTreeNode> children) {
+        for (DsxpDeviceTreeNode deviceTreeNode : children.values()) {
+            DsxpDeviceWorker worker = (DsxpDeviceWorker) deviceTreeNode.getWorker();
+            DeviceWorkerState state = worker.state();
+            boolean deviceOnline = state.isOnline();
+            System.out.println("设备：" + deviceTreeNode.identifier() + "是否在线：" + deviceOnline);
+            PacketCounter packetCounter = state.getPacketCounter();
+            if (packetCounter == null) {
+                continue;
+            }
+            //设备离线 error 增加
+            long errors = packetCounter.getErrors();
+            //设备正常 success 增加
+            long success = packetCounter.getSuccess();
+            //健康度就是：success / (success + errors) 的百分比
+            System.out.println("设备: " + deviceTreeNode.identifier() + "发送错误包数：" + errors + " 成功包数：" + success);
+            Map<? extends DsxpNodeDefinition, ? extends DsxpDeviceTreeNode> nodeChildren = deviceTreeNode.getChildren();
+            if (!nodeChildren.isEmpty()) {
+                recursiveTraversalDevice(nodeChildren);
             }
         }
     }
