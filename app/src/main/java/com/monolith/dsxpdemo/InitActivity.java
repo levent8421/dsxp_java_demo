@@ -1,6 +1,12 @@
 package com.monolith.dsxpdemo;
 
+import android.Manifest;
+import android.content.Intent;
+import android.net.Uri;
+import android.os.Build;
 import android.os.Bundle;
+import android.os.Environment;
+import android.provider.Settings;
 import android.widget.EditText;
 import android.widget.TextView;
 
@@ -36,9 +42,36 @@ public class InitActivity extends AppCompatActivity {
     }
 
     private void initView() {
+        applyPermission();
         etResource = findViewById(R.id.et_resource);
         tvMsg = findViewById(R.id.tv_msg);
         findViewById(R.id.btn_parse).setOnClickListener(v -> parseResource());
+    }
+
+
+    private void applyPermission() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            if (!Environment.isExternalStorageManager()) {
+                Intent intent = new Intent(
+                        Settings.ACTION_MANAGE_APP_ALL_FILES_ACCESS_PERMISSION);
+                intent.setData(Uri.parse("package:" + this.getPackageName()));
+                this.startActivity(intent);
+            }
+        } else {
+            checkPermissions();
+        }
+    }
+
+    private void checkPermissions() {
+        requestPermissions(new String[]{
+                        Manifest.permission.READ_EXTERNAL_STORAGE,
+                        Manifest.permission.WRITE_EXTERNAL_STORAGE,
+                        Manifest.permission.INTERNET,
+                        Manifest.permission.READ_PHONE_STATE,
+                        Manifest.permission.CAMERA,
+                        Manifest.permission.RECORD_AUDIO,
+                },
+                0x3171FA);
     }
 
     private void loadDsxpResource() {

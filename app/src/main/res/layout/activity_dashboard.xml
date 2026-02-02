@@ -70,11 +70,17 @@
                 android:layout_height="wrap_content"
                 android:text="查看仓库" />
 
-            <Button
+            <!--<Button
                 android:id="@+id/btn_worksheet"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="工单演示" />
+                android:text="工单演示" />-->
+
+            <Button
+                android:id="@+id/btn_hik"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="海康工具" />
         </LinearLayout>
     </HorizontalScrollView>
 

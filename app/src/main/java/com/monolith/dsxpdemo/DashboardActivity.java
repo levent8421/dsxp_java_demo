@@ -106,7 +106,8 @@ public class DashboardActivity extends AppCompatActivity {
         findViewById(R.id.btn_offline_check).setOnClickListener(v -> filterOfflineDevice());
         findViewById(R.id.btn_open_lock).setOnClickListener(v -> openLock());
         findViewById(R.id.btn_close_lock).setOnClickListener(v -> closeLock());
-        findViewById(R.id.btn_worksheet).setOnClickListener(v -> worksheetControl());
+        //findViewById(R.id.btn_worksheet).setOnClickListener(v -> worksheetControl());
+        findViewById(R.id.btn_hik).setOnClickListener(v -> hik());
         this.rvComponents = findViewById(R.id.rvComponents);
         this.rvComponents.setLayoutManager(new LinearLayoutManager(this));
     }
@@ -486,5 +487,9 @@ public class DashboardActivity extends AppCompatActivity {
         WorksheetUtils.startWorksheet(list);
         ThreadUtils.sleepMs(4000);
         WorksheetUtils.stopWorksheet(list);
+    }
+
+    private void hik(){
+        ActivityUtils.to(this, HIKNvrToolsActivity.class);
     }
 }
