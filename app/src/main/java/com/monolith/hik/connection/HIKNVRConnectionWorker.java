@@ -3,6 +3,7 @@ package com.monolith.hik.connection;
 import com.monolith.dsxp.DsxpException;
 import com.monolith.dsxp.driver.DsxpConnectionTask;
 import com.monolith.dsxp.driver.DsxpConnectionWorker;
+import com.monolith.dsxp.driver.conf.DsxpConnectionPropConf;
 import com.monolith.dsxp.driver.simple.conn.task.DauCallerTask;
 import com.monolith.dsxp.driver.state.ConnectionState;
 import com.monolith.dsxp.tree.DsxpConnectionNode;
@@ -42,6 +43,11 @@ public class HIKNVRConnectionWorker implements DsxpConnectionWorker {
     @Override
     public ConnectionState state() {
         return state;
+    }
+
+    @Override
+    public DsxpConnectionPropConf getConnPropConf() {
+        return null;
     }
 
     @Override

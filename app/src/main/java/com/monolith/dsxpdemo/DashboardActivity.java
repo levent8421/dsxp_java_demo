@@ -103,7 +103,7 @@ public class DashboardActivity extends AppCompatActivity {
         findViewById(R.id.btn_build_driver).setOnClickListener(v -> buildDriver());
         findViewById(R.id.btn_start).setOnClickListener(v -> startDriver());
         findViewById(R.id.btn_stop).setOnClickListener(v -> stopDriver());
-        findViewById(R.id.btn_offline_check).setOnClickListener(v -> filterOfflineDevice());
+        findViewById(R.id.btn_offline_check).setOnClickListener(v -> printDeviceHealthy());
         findViewById(R.id.btn_open_lock).setOnClickListener(v -> openLock());
         findViewById(R.id.btn_close_lock).setOnClickListener(v -> closeLock());
         //findViewById(R.id.btn_worksheet).setOnClickListener(v -> worksheetControl());
@@ -320,6 +320,16 @@ public class DashboardActivity extends AppCompatActivity {
         }
     }
 
+    private void getWeight() {
+        WarehouseManager warehouseManager = DeviceManager.INSTANCE.getWarehouseManager();
+        WarehouseComponent component = warehouseManager.findComponent(ComponentCodes.parseCode("L1-1-1"));
+        if (component instanceof ShelfBin) {
+            ShelfBin shelfBin = (ShelfBin) component;
+            BigDecimal invEnd = shelfBin.getState().getInventoryState().getInvEnd();
+            System.out.println("单重为：" + invEnd);
+        }
+    }
+
     //主动获取库存
     private void getInventory() {
         WarehouseManager warehouseManager = DeviceManager.INSTANCE.getWarehouseManager();
@@ -402,42 +412,40 @@ public class DashboardActivity extends AppCompatActivity {
         }
     }
 
-    private void filterOfflineDevice() {
-        List<WarehouseComponent> allComponents = DeviceManager.INSTANCE.getWarehouseManager().getAllComponents();
-        for (WarehouseComponent component : allComponents) {
-            if (component instanceof ShelfBin){
-                Collection<WarehouseDauInfo<? extends WarehouseDau>> dauInfos = component.getHardwareBinding().getDauInfos();
-                for (WarehouseDauInfo<? extends WarehouseDau> dauInfo : dauInfos) {
-                    if (!dauInfo.isOnline()){
-                        DsxpDeviceTreeNode node = dauInfo.getDau().node();
-                        Map<? extends DsxpNodeDefinition, ? extends DsxpDeviceTreeNode> children = node.getChildren();
-                        recursiveTraversalDevice(children);
-                    }
-                }
-            }
-        }
-    }
-
-    private void recursiveTraversalDevice(Map<? extends DsxpNodeDefinition, ? extends DsxpDeviceTreeNode> children) {
-        for (DsxpDeviceTreeNode deviceTreeNode : children.values()) {
-            DsxpDeviceWorker worker = (DsxpDeviceWorker) deviceTreeNode.getWorker();
-            DeviceWorkerState state = worker.state();
-            boolean deviceOnline = state.isOnline();
-            System.out.println("设备：" + deviceTreeNode.identifier() + "是否在线：" + deviceOnline);
-            PacketCounter packetCounter = state.getPacketCounter();
-            if (packetCounter == null) {
+    private static void printDeviceHealthy() {
+        List<DsxpWorker> allWorkers = DeviceTreeUtils.findAllWorkers(DeviceManager.INSTANCE.getDeviceTree());
+        for (DsxpWorker worker : allWorkers) {
+            if (!(worker instanceof DsxpDeviceWorker)) {
                 continue;
             }
-            //设备离线 error 增加
-            long errors = packetCounter.getErrors();
-            //设备正常 success 增加
-            long success = packetCounter.getSuccess();
-            //健康度就是：success / (success + errors) 的百分比
-            System.out.println("设备: " + deviceTreeNode.identifier() + "发送错误包数：" + errors + " 成功包数：" + success);
-            Map<? extends DsxpNodeDefinition, ? extends DsxpDeviceTreeNode> nodeChildren = deviceTreeNode.getChildren();
-            if (!nodeChildren.isEmpty()) {
-                recursiveTraversalDevice(nodeChildren);
+            DsxpDeviceWorker deviceWorker = (DsxpDeviceWorker) worker;
+            DeviceWorkerState state = deviceWorker.state();
+            if (state == null) {
+                return;
             }
+            // 是否在线
+            boolean online = state.isOnline();
+            // 全部通信包数
+            long totalPacket = 0;
+            // 全部错误包数
+            long errorPacket = 0;
+            // 连续错误包数
+            long continueErrors = 0;
+            // 错误率
+            double errorRate = 0;
+            PacketCounter packetCounter = state.getPacketCounter();
+            if (packetCounter != null) {
+                totalPacket = packetCounter.getErrors() + packetCounter.getSuccess();
+                errorPacket = packetCounter.getErrors();
+                continueErrors = packetCounter.getContinueErrors();
+                errorRate = (double) errorPacket / (double) totalPacket;
+            }
+            DsxpDeviceTreeNode node = worker.node();
+            System.out.println(node.identifier() + ": online=" + online
+                    + ", total=" + totalPacket
+                    + ", errors=" + errorPacket
+                    + ", errorRate=" + errorRate
+                    + ", continueErrors=" + continueErrors);
         }
     }
 
@@ -489,7 +497,7 @@ public class DashboardActivity extends AppCompatActivity {
         WorksheetUtils.stopWorksheet(list);
     }
 
-    private void hik(){
+    private void hik() {
         ActivityUtils.to(this, HIKNvrToolsActivity.class);
     }
 }
