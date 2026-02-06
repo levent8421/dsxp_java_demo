@@ -150,7 +150,7 @@ public class WorksheetActivity extends AppCompatActivity implements WorksheetLif
             if (component instanceof ShelfBin) {
                 //必须是绑定了物料的库位才能够作为工单的执行项
                 WarehouseSku skuConf = component.getConfContainer().getSku();
-                if (skuConf.getNo() == null || skuConf.getApw() == null) {
+                if (skuConf.getNo() == null) {
                     continue;
                 }
                 bins.add((ShelfBin) component);

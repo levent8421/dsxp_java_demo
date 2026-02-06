@@ -1,5 +1,7 @@
 package com.monolith.dsxpdemo;
 
+import android.annotation.SuppressLint;
+import android.content.Intent;
 import android.os.Bundle;
 import android.os.Handler;
 
@@ -9,7 +11,6 @@ import androidx.recyclerview.widget.RecyclerView;
 
 import com.monolith.dsxp.define.DsxpConnectionDefinition;
 import com.monolith.dsxp.define.DsxpDriverGroupDefinition;
-import com.monolith.dsxp.define.DsxpNodeDefinition;
 import com.monolith.dsxp.define.ds3p.Ds3pUrl;
 import com.monolith.dsxp.define.ds3p.Ds3pUrlUtils;
 import com.monolith.dsxp.driver.DsxpBroadcastDeviceWorker;
@@ -30,6 +31,7 @@ import com.monolith.dsxp.tree.DsxpDeviceTree;
 import com.monolith.dsxp.tree.DsxpDeviceTreeNode;
 import com.monolith.dsxp.tree.DsxpDriverGroupNode;
 import com.monolith.dsxp.util.DeviceTreeUtils;
+import com.monolith.dsxp.util.ExceptionUtils;
 import com.monolith.dsxp.util.ListUtils;
 import com.monolith.dsxp.util.PacketCounter;
 import com.monolith.dsxp.util.ThreadUtils;
@@ -85,7 +87,8 @@ public class DashboardActivity extends AppCompatActivity {
 
     private WarehouseComponentListAdapter componentListAdapter;
     private final Handler handler = new Handler();
-    //private final ComponentHealthStateRunner healthStateRunner = new ComponentHealthStateRunner();
+    // private final ComponentHealthStateRunner healthStateRunner = new
+    // ComponentHealthStateRunner();
     private final DeviceHealthStateRunner healthStateRunner = new DeviceHealthStateRunner();
     private long time;
 
@@ -95,6 +98,7 @@ public class DashboardActivity extends AppCompatActivity {
         setContentView(R.layout.activity_dashboard);
         initView();
         initEvent();
+        refreshBinList();
     }
 
     private void initView() {
@@ -106,7 +110,8 @@ public class DashboardActivity extends AppCompatActivity {
         findViewById(R.id.btn_offline_check).setOnClickListener(v -> printDeviceHealthy());
         findViewById(R.id.btn_open_lock).setOnClickListener(v -> openLock());
         findViewById(R.id.btn_close_lock).setOnClickListener(v -> closeLock());
-        //findViewById(R.id.btn_worksheet).setOnClickListener(v -> worksheetControl());
+        findViewById(R.id.btn_install).setOnClickListener(v -> install());
+        findViewById(R.id.btn_worksheet).setOnClickListener(v -> worksheetControl());
         findViewById(R.id.btn_hik).setOnClickListener(v -> hik());
         this.rvComponents = findViewById(R.id.rvComponents);
         this.rvComponents.setLayoutManager(new LinearLayoutManager(this));
@@ -120,6 +125,7 @@ public class DashboardActivity extends AppCompatActivity {
         eventContext.registerHandler(WarehouseEventIds.INVENTORY_UPDATE, (node, event) -> {
             InventoryUpdateEvent data = (InventoryUpdateEvent) event.getData();
             System.out.println(data.getCode().asString() + "：标准库存变化 ==》" + data.getInvDelta());
+            onComponentInventoryUpdate(data);
         });
         // 注册重力库位库存更新事件
         eventContext.registerHandler(MitDspEvents.WT_INVENTORY, (node, event) -> {
@@ -131,14 +137,15 @@ public class DashboardActivity extends AppCompatActivity {
             WarehouseDau dau = (WarehouseDau) worker;
             WarehouseComponent component = dau.getComponent();
             ComponentCode code = component.code();
-            System.out.println(code + "：重力库位库存更新 ==》" + "跟踪库存变化：" + data.getInventoryDelta() + "    测量库存变化：" + data.getMeasuredInventoryDelta());
+            System.out.println(code + "：重力库位库存更新 ==》" + "跟踪库存变化：" + data.getInventoryDelta() + "    测量库存变化："
+                    + data.getMeasuredInventoryDelta());
         });
         // 重量跟踪事件
         eventContext.registerHandler(MitDspEvents.WT_TRACE_WEIGHT_UPDATE, ((node, event) -> {
             TraceWeightUpdateEventData data = (TraceWeightUpdateEventData) event.getData();
             System.out.println("库位：" + node.getDef().identifier() + "变化" + data.getWeightDelta());
         }));
-        //刷卡事件（1s一次上报 自行过滤）
+        // 刷卡事件（1s一次上报 自行过滤）
         eventContext.registerHandler(RfidEvents.RFID_CARD_PRESS, (node, event) -> {
             HFDauData eventValue = (HFDauData) event.getData();
             String identifier = node.getDef().identifier();
@@ -152,13 +159,15 @@ public class DashboardActivity extends AppCompatActivity {
          */
         eventContext.registerHandler(WarehouseEventIds.ACCESS_CONTROL_STATE, (node, event) -> {
             AccessControlStateEvent controlStateEvent = (AccessControlStateEvent) event.getData();
-            System.out.println(controlStateEvent.getCode().asString() + "锁状态变更 ：===》" + controlStateEvent.getStateCode());
+            System.out
+                    .println(controlStateEvent.getCode().asString() + "锁状态变更 ：===》" + controlStateEvent.getStateCode());
         });
-        //设备在线离线状态变更
+        // 设备在线离线状态变更
         eventContext.registerHandler(WarehouseEventIds.HARDWARE_STATE, (node, event) -> {
             HardwareStateEvent eventData = (HardwareStateEvent) event.getData();
             ComponentCode code = eventData.getCode();
             List<HardwareStateEvent.Item> items = eventData.getItems();
+            boolean isOnline = true;
             for (HardwareStateEvent.Item item : items) {
                 WarehouseDau dau = item.getDau();
                 if (WarehouseDauUtils.isAccessControlDau(dau)) {
@@ -173,9 +182,13 @@ public class DashboardActivity extends AppCompatActivity {
                 if (WarehouseDauUtils.isInventoryDau(dau)) {
                     System.out.println(dau.node().identifier() + " 库存设备在线状态变更: " + item.isOnline());
                 }
+                if (!item.isOnline()) {
+                    isOnline = false;
+                }
             }
+            onComponentStateUpdate(code, isOnline);
         });
-        //dau 轮询回调
+        // dau 轮询回调
         eventContext.registerHandler(DsxpEventIds.DAU_TICK, (node, event) -> {
             DauTickEventData tickEventData = (DauTickEventData) event.getData();
             boolean firstTick = tickEventData.isFirstTick();
@@ -199,7 +212,9 @@ public class DashboardActivity extends AppCompatActivity {
         });
         eventContext.registerHandler(MitDspEvents.HIGH_RESOLUTION_WEIGHT, (node, event) -> {
             HighResolutionWeightEventData weightEventData = (HighResolutionWeightEventData) event.getData();
-            System.out.println("高精度重量变化 ===》 " + weightEventData.getCode().asString() + " 净重: " + weightEventData.getNetWeight() + " 毛重: " + weightEventData.getGrossWeight() + " 皮重: " + weightEventData.getTareWeight());
+            System.out.println(
+                    "高精度重量变化 ===》 " + weightEventData.getCode().asString() + " 净重: " + weightEventData.getNetWeight()
+                            + " 毛重: " + weightEventData.getGrossWeight() + " 皮重: " + weightEventData.getTareWeight());
         });
     }
 
@@ -218,30 +233,30 @@ public class DashboardActivity extends AppCompatActivity {
         WarehouseManager warehouseManager = DeviceManager.INSTANCE.getWarehouseManager();
         String warehouseInfo = WarehouseComponentUtils.dumpAsPrintable(warehouseManager.getWarehouse());
 
-        //获取货架/层/库位信息
+        // 获取货架/层/库位信息
         List<WarehouseComponent> allComponents = warehouseManager.getAllComponents();
         List<Shelf> shelfList = new ArrayList<>();
         List<ShelfLayer> shelfLayerList = new ArrayList<>();
         List<ShelfBin> shelfBinList = new ArrayList<>();
         for (WarehouseComponent component : allComponents) {
             if (component instanceof Shelf) {
-                //货架
+                // 货架
                 Shelf shelf = (Shelf) component;
                 shelfList.add(shelf);
             }
             if (component instanceof ShelfLayer) {
-                //层
+                // 层
                 ShelfLayer shelfLayer = (ShelfLayer) component;
                 shelfLayerList.add(shelfLayer);
             }
             if (component instanceof ShelfBin) {
-                //库位
+                // 库位
                 ShelfBin shelfBin = (ShelfBin) component;
                 shelfBinList.add(shelfBin);
-                //获取库位绑定的sku信息
+                // 获取库位绑定的sku信息
                 WarehouseSku skuConf = component.getConfContainer().getSku();
                 if (skuConf != null) {
-                    //sku
+                    // sku
                 }
             }
         }
@@ -269,7 +284,7 @@ public class DashboardActivity extends AppCompatActivity {
                 Map<String, String> map = new HashMap<>();
                 map.put("sku_name", component.code().asString());
                 map.put("sku_no", component.code().asString());
-                map.put("sku_apw", "0.00");
+                map.put("sku_apw", "0.01");
                 warehouseManager.loadComponentProps(component.code(), map);
             }
         }
@@ -288,9 +303,10 @@ public class DashboardActivity extends AppCompatActivity {
         time = System.currentTimeMillis();
         deviceManager.start();
         /**
-         * 这边我偷懒直接在驱动启动后就执行 实际项目中 页面需要的时候再启动 页面不需要的时候关掉 减少资源开销 上位机主动获取的时候主动调一下run中方法返回参数即可
+         * 这边我偷懒直接在驱动启动后就执行 实际项目中 页面需要的时候再启动 页面不需要的时候关掉 减少资源开销
+         * 上位机主动获取的时候主动调一下run中方法返回参数即可
          */
-        //healthStateRunner.run();
+        // healthStateRunner.run();
     }
 
     private void stopDriver() {
@@ -311,7 +327,7 @@ public class DashboardActivity extends AppCompatActivity {
                 if (broadcastDevice instanceof DspBroadcastDeviceWorker) {
                     DspBroadcastDeviceWorker broadcastDeviceWorker = (DspBroadcastDeviceWorker) broadcastDevice;
                     try {
-                        //broadcastDeviceWorker.broadcastDoZero();
+                        // broadcastDeviceWorker.broadcastDoZero();
                     } catch (Exception e) {
                         e.printStackTrace();
                     }
@@ -330,11 +346,11 @@ public class DashboardActivity extends AppCompatActivity {
         }
     }
 
-    //主动获取库存
+    // 主动获取库存
     private void getInventory() {
         WarehouseManager warehouseManager = DeviceManager.INSTANCE.getWarehouseManager();
 
-        //获取全部
+        // 获取全部
         List<WarehouseComponent> allComponents = warehouseManager.getAllComponents();
         for (WarehouseComponent component : allComponents) {
             if (component instanceof ShelfBin) {
@@ -343,7 +359,7 @@ public class DashboardActivity extends AppCompatActivity {
             }
         }
 
-        //单个获取
+        // 单个获取
         WarehouseComponent component = warehouseManager.findComponent(ComponentCodes.parseCode("L1-1-1"));
         if (component instanceof ShelfBin) {
             ShelfBin shelfBin = (ShelfBin) component;
@@ -365,18 +381,20 @@ public class DashboardActivity extends AppCompatActivity {
         }
         BigDecimal inventory = shelfBin.getState().getInventoryState().getInvEnd();
         BigDecimal invMeasured = shelfBin.getState().getInventoryState().getInvMeasuredEnd();
-        System.out.println("库位：" + binCode + " isOnline: " + dauOnline + " 当前跟踪库存为：" + inventory + " 当前测量库存为：" + invMeasured);
+        System.out.println(
+                "库位：" + binCode + " isOnline: " + dauOnline + " 当前跟踪库存为：" + inventory + " 当前测量库存为：" + invMeasured);
     }
 
     private void openLock() {
-        //这边传入想开的锁的code
-        WarehouseComponent component = DeviceManager.INSTANCE.getWarehouseManager().findComponent(ComponentCodes.parseCode("L1"));
+        // 这边传入想开的锁的code
+        WarehouseComponent component = DeviceManager.INSTANCE.getWarehouseManager()
+                .findComponent(ComponentCodes.parseCode("L1"));
         DauContainer<AccessControlDau> accessControlDaus = component.getHardwareBinding().getAccessControlDaus();
         if (accessControlDaus.isEmpty()) {
             System.out.println("no this lock");
             return;
         }
-        //打开这个code下所有锁
+        // 打开这个code下所有锁
         for (WarehouseDauInfo<AccessControlDau> value : accessControlDaus.values()) {
             AccessControlDau dau = value.getDau();
             if (dau instanceof DspLockerDauWorker) {
@@ -391,14 +409,15 @@ public class DashboardActivity extends AppCompatActivity {
     }
 
     private void closeLock() {
-        //这边传入想关的锁的code
-        WarehouseComponent component = DeviceManager.INSTANCE.getWarehouseManager().findComponent(ComponentCodes.parseCode("L1-1-1"));
+        // 这边传入想关的锁的code
+        WarehouseComponent component = DeviceManager.INSTANCE.getWarehouseManager()
+                .findComponent(ComponentCodes.parseCode("L1-1-1"));
         DauContainer<AccessControlDau> accessControlDaus = component.getHardwareBinding().getAccessControlDaus();
         if (accessControlDaus.isEmpty()) {
             System.out.println("no this lock");
             return;
         }
-        //关闭这个code下所有锁
+        // 关闭这个code下所有锁
         for (WarehouseDauInfo<AccessControlDau> value : accessControlDaus.values()) {
             AccessControlDau dau = value.getDau();
             if (dau instanceof DspLockerDauWorker) {
@@ -449,32 +468,76 @@ public class DashboardActivity extends AppCompatActivity {
         }
     }
 
-    private void onComponentStateUpdate(DsxpDeviceTreeNode node, Boolean online) {
-        DsxpWorker worker = node.getWorker();
-        if (!(worker instanceof WarehouseDau)) {
-            return;
+    private void install() {
+        try {
+            String action = "gzpeite.intent.action.install_apk";
+            Intent intent = new Intent(action);
+            String path = "/sdcard/proton.apk";
+            intent.putExtra("apk_path", path);
+            intent.putExtra("is_start", true);
+            sendBroadcast(intent);
+            System.out.println("install success");
+        } catch (Exception e) {
+            System.out.println("sendBroadcast err {}" + ExceptionUtils.getMessage(e));
         }
-        WarehouseDau dau = (WarehouseDau) worker;
-        WarehouseComponent component = dau.getComponent();
-        ComponentCode code = component.code();
-        int position = getPosition(code);
-        WarehouseComponentListItem item = componentListAdapter.getItem(position);
-        item.setOnline(online);
-        handler.post(() -> componentListAdapter.notifyItemChanged(position));
     }
 
+    @SuppressLint("NotifyDataSetChanged")
+    private void onComponentStateUpdate(ComponentCode code, boolean online) {
+        if (componentListAdapter == null) {
+            System.out.println("componentListAdapter is null, skipping update");
+            return;
+        }
+
+        int position = getPosition(code);
+
+        if (position < 0 || position >= componentListAdapter.getItemCount()) {
+            System.out.println("Invalid position: " + position + " for code: " + code.asString());
+            return;
+        }
+
+        WarehouseComponentListItem item = componentListAdapter.getItem(position);
+        item.setOnline(online);
+        handler.post(() -> {
+            if (componentListAdapter != null) {
+                componentListAdapter.notifyItemChanged(position);
+            }
+        });
+    }
+
+    @SuppressLint("NotifyDataSetChanged")
     private void onComponentInventoryUpdate(InventoryUpdateEvent event) {
+        if (componentListAdapter == null) {
+            System.out.println("componentListAdapter is null, skipping update");
+            return;
+        }
+
         ComponentCode code = event.getCode();
         int position = getPosition(code);
+
+        if (position < 0 || position >= componentListAdapter.getItemCount()) {
+            System.out.println("Invalid position: " + position + " for code: " + code.asString());
+            return;
+        }
+
         WarehouseComponentListItem item = componentListAdapter.getItem(position);
         BigDecimal inv = event.getInvEnd();
         Object sensorData = event.getSensorDataEnd();
         item.setInventory(inv.toString() + " PCS");
         item.setWeight(sensorData.toString() + " Kg");
-        handler.post(() -> componentListAdapter.notifyItemChanged(position));
+        handler.post(() -> {
+            if (componentListAdapter != null) {
+                componentListAdapter.notifyItemChanged(position);
+            }
+        });
     }
 
     private int getPosition(ComponentCode code) {
+        if (componentListAdapter == null) {
+            System.out.println("componentListAdapter is null when getting position for: " + code.asString());
+            return -1;
+        }
+
         for (int i = 0; i < componentListAdapter.getItemCount(); i++) {
             WarehouseComponentListItem item = componentListAdapter.getItem(i);
             WarehouseComponent component = item.getComponent();
@@ -482,6 +545,7 @@ public class DashboardActivity extends AppCompatActivity {
                 return i;
             }
         }
+        System.out.println("Component not found in list: " + code.asString());
         return -1;
     }
 
