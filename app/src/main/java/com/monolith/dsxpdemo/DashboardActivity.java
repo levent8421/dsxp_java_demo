@@ -35,6 +35,7 @@ import com.monolith.dsxp.util.ExceptionUtils;
 import com.monolith.dsxp.util.ListUtils;
 import com.monolith.dsxp.util.PacketCounter;
 import com.monolith.dsxp.util.ThreadUtils;
+import com.monolith.dsxp.version.DsxpVersion;
 import com.monolith.dsxp.warehouse.WarehouseManager;
 import com.monolith.dsxp.warehouse.component.Shelf;
 import com.monolith.dsxp.warehouse.component.ShelfBin;
@@ -480,6 +481,12 @@ public class DashboardActivity extends AppCompatActivity {
         } catch (Exception e) {
             System.out.println("sendBroadcast err {}" + ExceptionUtils.getMessage(e));
         }
+    }
+
+    private void version() {
+        DsxpDeviceTree deviceTree = DeviceManager.INSTANCE.getDeviceTree();
+        DsxpVersion version = deviceTree.version();
+        System.out.println(version.getVersion() + "=====" + version.getReleaseTime());
     }
 
     @SuppressLint("NotifyDataSetChanged")
