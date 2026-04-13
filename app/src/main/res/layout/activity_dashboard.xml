@@ -74,7 +74,7 @@
                 android:id="@+id/btn_worksheet"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="工单演示" />
+                android:text="工单开启" />
 
             <Button
                 android:id="@+id/btn_hik"

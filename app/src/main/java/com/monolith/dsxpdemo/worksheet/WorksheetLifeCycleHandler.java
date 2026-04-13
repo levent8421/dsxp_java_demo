@@ -13,6 +13,7 @@ import com.monolith.dsxp.warehouse.worksheet.task.WorksheetItemPerformTask;
 import com.monolith.dsxp.warehouse.worksheet.task.WorksheetItemPerformTaskState;
 import com.monolith.dsxp.warehouse.worksheet.task.WorksheetPerformError;
 import com.monolith.dsxp.warehouse.worksheet.task.WorksheetPerformTask;
+import com.monolith.dsxpdemo.util.TimeMeasureUtil;
 import com.monolith.dsxpdemo.worksheet.run.WorksheetRunningModel;
 
 import java.util.HashMap;
@@ -40,6 +41,7 @@ public class WorksheetLifeCycleHandler implements WorksheetListener {
 
     @Override
     public void onWorksheetStart(WorksheetPerformTask worksheetPerformTask) {
+        TimeMeasureUtil.stop("worksheet开启");
         // TODO 工单开启成功回调业务
         List<WarehouseComponent> allComponents = warehouseManager.getAllComponents();
         for (WarehouseComponent component : allComponents) {
@@ -58,6 +60,7 @@ public class WorksheetLifeCycleHandler implements WorksheetListener {
     @Override
     public void onWorksheetFinish(WorksheetPerformTask worksheetPerformTask) {
         // TODO 工单关闭成功回调业务
+        TimeMeasureUtil.stop("worksheet关闭");
     }
 
     @Override

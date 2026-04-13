@@ -4,6 +4,7 @@ import android.annotation.SuppressLint;
 import android.content.Intent;
 import android.os.Bundle;
 import android.os.Handler;
+import android.widget.Button;
 
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.recyclerview.widget.LinearLayoutManager;
@@ -34,7 +35,6 @@ import com.monolith.dsxp.util.DeviceTreeUtils;
 import com.monolith.dsxp.util.ExceptionUtils;
 import com.monolith.dsxp.util.ListUtils;
 import com.monolith.dsxp.util.PacketCounter;
-import com.monolith.dsxp.util.ThreadUtils;
 import com.monolith.dsxp.version.DsxpVersion;
 import com.monolith.dsxp.warehouse.WarehouseManager;
 import com.monolith.dsxp.warehouse.component.Shelf;
@@ -53,8 +53,13 @@ import com.monolith.dsxp.warehouse.utils.WarehouseDauUtils;
 import com.monolith.dsxp.warehouse.worker.AccessControlDau;
 import com.monolith.dsxp.warehouse.worker.DauContainer;
 import com.monolith.dsxp.warehouse.worker.HardwareBinding;
+import com.monolith.dsxp.warehouse.worker.InventoryDau;
 import com.monolith.dsxp.warehouse.worker.WarehouseDau;
 import com.monolith.dsxp.warehouse.worker.WarehouseDauInfo;
+import com.monolith.dsxp.warehouse.worker.WarehouseSupportedDriver;
+import com.monolith.dsxp.warehouse.worksheet.Worksheet;
+import com.monolith.dsxp.warehouse.worksheet.WorksheetConstants;
+import com.monolith.dsxp.warehouse.worksheet.task.WorksheetPerformTask;
 import com.monolith.dsxpdemo.adapter.WarehouseComponentListAdapter;
 import com.monolith.dsxpdemo.dsxp.DeviceManager;
 import com.monolith.dsxpdemo.dto.WarehouseComponentListItem;
@@ -62,12 +67,15 @@ import com.monolith.dsxpdemo.dto.WorksheetItemDTO;
 import com.monolith.dsxpdemo.run.DeviceHealthStateRunner;
 import com.monolith.dsxpdemo.util.ActivityUtils;
 import com.monolith.dsxpdemo.util.AlertUtils;
-import com.monolith.dsxpdemo.util.WorksheetUtils;
+import com.monolith.dsxpdemo.util.TimeMeasureUtil;
+import com.monolith.dsxpdemo.util.WorksheetControlUtils;
 import com.monolith.mit.dsp.MitDspEvents;
 import com.monolith.mit.dsp.worker.dau.io.DspLockerDauWorker;
+import com.monolith.mit.dsp.worker.dau.wt.SimpleWtDauWorker;
 import com.monolith.mit.dsp.worker.dau.wt.event.HighResolutionWeightEventData;
 import com.monolith.mit.dsp.worker.dau.wt.event.TraceWeightUpdateEventData;
 import com.monolith.mit.dsp.worker.dau.wt.event.WeightInventoryUpdateEventData;
+import com.monolith.mit.dsp.worker.dau.wt.state.WtDauState;
 import com.monolith.mit.dsp.worker.device.broadcast.DspBroadcastDeviceWorker;
 
 import java.math.BigDecimal;
@@ -92,6 +100,9 @@ public class DashboardActivity extends AppCompatActivity {
     // ComponentHealthStateRunner();
     private final DeviceHealthStateRunner healthStateRunner = new DeviceHealthStateRunner();
     private long time;
+    private Button worksheet;
+    private boolean worksheetOpen = false;
+
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -112,7 +123,8 @@ public class DashboardActivity extends AppCompatActivity {
         findViewById(R.id.btn_open_lock).setOnClickListener(v -> openLock());
         findViewById(R.id.btn_close_lock).setOnClickListener(v -> closeLock());
         findViewById(R.id.btn_install).setOnClickListener(v -> install());
-        findViewById(R.id.btn_worksheet).setOnClickListener(v -> worksheetControl());
+        worksheet = findViewById(R.id.btn_worksheet);
+        worksheet.setOnClickListener(v -> worksheetControl());
         findViewById(R.id.btn_hik).setOnClickListener(v -> hik());
         this.rvComponents = findViewById(R.id.rvComponents);
         this.rvComponents.setLayoutManager(new LinearLayoutManager(this));
@@ -337,13 +349,44 @@ public class DashboardActivity extends AppCompatActivity {
         }
     }
 
+    /**
+     * 获取某个库位单重
+     */
     private void getWeight() {
         WarehouseManager warehouseManager = DeviceManager.INSTANCE.getWarehouseManager();
         WarehouseComponent component = warehouseManager.findComponent(ComponentCodes.parseCode("L1-1-1"));
         if (component instanceof ShelfBin) {
-            ShelfBin shelfBin = (ShelfBin) component;
-            BigDecimal invEnd = shelfBin.getState().getInventoryState().getInvEnd();
-            System.out.println("单重为：" + invEnd);
+            DauContainer<InventoryDau> inventoryDaus = component.getHardwareBinding().getInventoryDaus();
+            for (WarehouseDauInfo<InventoryDau> dauInfo : inventoryDaus.values()) {
+                InventoryDau inventoryDau = dauInfo.getDau();
+                if (inventoryDau instanceof SimpleWtDauWorker) {
+                    SimpleWtDauWorker wtDauWorker = (SimpleWtDauWorker) inventoryDau;
+                    WtDauState wtDauState = wtDauWorker.state();
+                    System.out.println("净重为：" + wtDauState.getPrimaryInvResult().getWeight());
+                }
+            }
+        }
+    }
+
+    /**
+     * 获取全部库位单重
+     */
+    private void getAllWeight() {
+        WarehouseManager warehouseManager = DeviceManager.INSTANCE.getWarehouseManager();
+        List<WarehouseComponent> allComponents = warehouseManager.getAllComponents();
+
+        for (WarehouseComponent component : allComponents) {
+            if (component instanceof ShelfBin) {
+                DauContainer<InventoryDau> inventoryDaus = component.getHardwareBinding().getInventoryDaus();
+                for (WarehouseDauInfo<InventoryDau> dauInfo : inventoryDaus.values()) {
+                    InventoryDau inventoryDau = dauInfo.getDau();
+                    if (inventoryDau instanceof SimpleWtDauWorker) {
+                        SimpleWtDauWorker wtDauWorker = (SimpleWtDauWorker) inventoryDau;
+                        WtDauState wtDauState = wtDauWorker.state();
+                        System.out.println("净重为：" + wtDauState.getPrimaryInvResult().getWeight());
+                    }
+                }
+            }
         }
     }
 
@@ -557,15 +600,64 @@ public class DashboardActivity extends AppCompatActivity {
     }
 
     private void worksheetControl() {
-        List<WorksheetItemDTO> list = new ArrayList<>();
-        WorksheetItemDTO worksheetItemDTO = new WorksheetItemDTO();
-        worksheetItemDTO.setBinCode("L1-1-2");
-        worksheetItemDTO.setPlanQty(new BigDecimal(5));
-        worksheetItemDTO.setCompleteQty(new BigDecimal(1));
-        list.add(worksheetItemDTO);
-        WorksheetUtils.startWorksheet(list);
-        ThreadUtils.sleepMs(4000);
-        WorksheetUtils.stopWorksheet(list);
+        if (!worksheetOpen) {
+            List<WorksheetItemDTO> list = new ArrayList<>();
+            WarehouseManager warehouseManager = DeviceManager.INSTANCE.getWarehouseManager();
+            List<WarehouseComponent> allComponents = warehouseManager.getAllComponents();
+            for (WarehouseComponent component : allComponents) {
+                if (component instanceof ShelfBin) {
+                    WorksheetItemDTO worksheetItemDTO = new WorksheetItemDTO();
+                    worksheetItemDTO.setBinCode(component.code().asString());
+                    worksheetItemDTO.setPlanQty(new BigDecimal(5));
+                    worksheetItemDTO.setCompleteQty(new BigDecimal(1));
+                    list.add(worksheetItemDTO);
+                }
+            }
+            System.out.println("工单开启=================");
+            WorksheetControlUtils.startWorksheet(list);
+            broadcastWorksheetStart();
+            worksheet.setText("工单关闭");
+        } else {
+            System.out.println("工单关闭=================");
+            WorksheetControlUtils.stopWorksheet();
+            broadcastWorksheetStop();
+            worksheet.setText("工单开启");
+        }
+        worksheetOpen = !worksheetOpen;
+    }
+
+    private void broadcastWorksheetStart() {
+        WarehouseManager warehouseManager = DeviceManager.INSTANCE.getWarehouseManager();
+        Worksheet sheet = new Worksheet("");
+        sheet.setAssistMode(WorksheetConstants.ASSIST_MODE_STRICT);
+        WorksheetPerformTask performTask = new WorksheetPerformTask(null, sheet, null);
+        List<WarehouseSupportedDriver> drivers = warehouseManager.getSupportedDrivers();
+        TimeMeasureUtil.start("worksheet开启");
+        for (WarehouseSupportedDriver item : drivers) {
+            try {
+                item.getWorksheetDriver().onWorksheetStart(performTask);
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+        }
+        TimeMeasureUtil.stop("worksheet开启");
+    }
+
+    private void broadcastWorksheetStop() {
+        WarehouseManager warehouseManager = DeviceManager.INSTANCE.getWarehouseManager();
+        Worksheet sheet = new Worksheet("");
+        sheet.setAssistMode(WorksheetConstants.ASSIST_MODE_STRICT);
+        WorksheetPerformTask performTask = new WorksheetPerformTask(null, sheet, null);
+        List<WarehouseSupportedDriver> drivers = warehouseManager.getSupportedDrivers();
+        TimeMeasureUtil.start("worksheet关闭");
+        for (WarehouseSupportedDriver item : drivers) {
+            try {
+                item.getWorksheetDriver().onWorksheetStop(performTask);
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+        }
+        TimeMeasureUtil.stop("worksheet关闭");
     }
 
     private void hik() {

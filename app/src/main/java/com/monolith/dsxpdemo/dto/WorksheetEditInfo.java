@@ -7,8 +7,8 @@ import java.util.List;
 
 public class WorksheetEditInfo {
     private String type;
-    private String dir;
-    private String assistMode;
+    private String dir = "pickup";
+    private String assistMode = "indicate";
 
     public String getType() {
         return type;

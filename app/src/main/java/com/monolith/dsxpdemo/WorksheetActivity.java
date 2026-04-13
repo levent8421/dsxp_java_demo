@@ -27,8 +27,11 @@ import com.monolith.dsxp.warehouse.worksheet.WorksheetItem;
 import com.monolith.dsxpdemo.constant.WorksheetExpandConstants;
 import com.monolith.dsxpdemo.dsxp.DeviceManager;
 import com.monolith.dsxpdemo.dto.WorksheetEditInfo;
+import com.monolith.dsxpdemo.dto.WorksheetItemDTO;
 import com.monolith.dsxpdemo.util.AlertUtils;
+import com.monolith.dsxpdemo.util.TimeMeasureUtil;
 import com.monolith.dsxpdemo.util.ToastUtils;
+import com.monolith.dsxpdemo.util.WorksheetControlUtils;
 import com.monolith.dsxpdemo.worksheet.WorksheetLifeCycleHandler;
 import com.monolith.dsxpdemo.worksheet.create.WorksheetBinCreateModel;
 import com.monolith.dsxpdemo.worksheet.create.WorksheetBinListAdapter;
@@ -109,11 +112,11 @@ public class WorksheetActivity extends AppCompatActivity implements WorksheetLif
         rvRunning.setLayoutManager(new LinearLayoutManager(this));
         runningAdapter = new WorksheetRunningAdapter(this);
         rvRunning.setAdapter(runningAdapter);
-        findViewById(R.id.btn_bins).setOnClickListener(v -> chooseBins());
+        /*findViewById(R.id.btn_bins).setOnClickListener(v -> chooseBins());
         findViewById(R.id.btn_dir).setOnClickListener(v -> chooseDir());
         findViewById(R.id.btn_type).setOnClickListener(v -> chooseType());
-        findViewById(R.id.btn_assist).setOnClickListener(v -> chooseAssistMode());
-        findViewById(R.id.btn_start).setOnClickListener(v -> startWorksheet());
+        findViewById(R.id.btn_assist).setOnClickListener(v -> chooseAssistMode());*/
+        findViewById(R.id.btn_start).setOnClickListener(v -> startPlanWorksheet());
         findViewById(R.id.btn_finish).setOnClickListener(v -> finishWorksheet());
     }
 
@@ -199,7 +202,7 @@ public class WorksheetActivity extends AppCompatActivity implements WorksheetLif
      * 实际业务中要做一下一次只能开启一个工单的判定
      */
     private void startWorksheet() {
-        if (editInfo.getType() == null || editInfo.getDir() == null || editInfo.getAssistMode() == null) {
+      /*  if (editInfo.getType() == null || editInfo.getDir() == null || editInfo.getAssistMode() == null) {
             return;
         }
         if (StringUtils.equals(editInfo.getType(), WorksheetExpandConstants.WORKSHEET_TYPE_PLAN_STR)) {
@@ -207,7 +210,7 @@ public class WorksheetActivity extends AppCompatActivity implements WorksheetLif
         }
         if (StringUtils.equals(editInfo.getType(), WorksheetExpandConstants.WORKSHEET_TYPE_TMP_STR)) {
             startTmpWorksheet();
-        }
+        }*/
     }
 
     /**
@@ -219,16 +222,23 @@ public class WorksheetActivity extends AppCompatActivity implements WorksheetLif
         worksheet.setFlowDir(WorksheetConstants.getFlowDirCode(editInfo.getDir()));
         worksheet.setTitle("计划工单演示");
         worksheet.setAssistMode(WorksheetConstants.getAssistModeCode(editInfo.getAssistMode()));
-        for (WorksheetBinCreateModel binModel : createModelMap.values()) {
-            //createExplicitItem 这种方式创建的工单项会亮灯  createOptionalItem 这种不会亮灯
-            WorksheetItem worksheetItem = WorksheetUtils.createExplicitItem(ComponentCodes.parseCode(binModel.getBinCode()));
-            worksheet.getItems().add(worksheetItem);
-            worksheetItem.setSkuNo(binModel.getSkuNo());
-            //下面两个数值有正负的区别  正：补货  负：取货
-            worksheetItem.setPlanQty(DecimalUtils.parse(binModel.getQtyPlanned()));
-            worksheetItem.setCompleteQty(DecimalUtils.parse(binModel.getQtyCompleted()));
+        WarehouseManager warehouseManager = DeviceManager.INSTANCE.getWarehouseManager();
+        List<WarehouseComponent> allComponents = warehouseManager.getAllComponents();
+
+        for (WarehouseComponent component : allComponents) {
+            if (component instanceof ShelfBin) {
+                //createExplicitItem 这种方式创建的工单项会亮灯  createOptionalItem 这种不会亮灯
+                WorksheetItem worksheetItem = WorksheetUtils.createExplicitItem(component.code());
+                worksheet.getItems().add(worksheetItem);
+                worksheetItem.setSkuNo(component.code().asString());
+                //下面两个数值有正负的区别  正：补货  负：取货
+                worksheetItem.setPlanQty(DecimalUtils.parse(5));
+                worksheetItem.setCompleteQty(DecimalUtils.parse(0));
+            }
         }
         try {
+            System.out.println("工单开启=================");
+            TimeMeasureUtil.start("worksheet开启");
             worksheetEngine.startWorksheet(worksheet);
             startRunningUi();
         } catch (Exception e) {
@@ -258,6 +268,9 @@ public class WorksheetActivity extends AppCompatActivity implements WorksheetLif
     }
 
     private void finishWorksheet() {
+        System.out.println("工单关闭=================");
+        TimeMeasureUtil.start("worksheet关闭");
+        //WorksheetControlUtils.stopWorksheet();
         try {
             worksheetEngine.stopWorksheet("worksheetId", WorksheetFinishReasons.MANUAL);
             createModelMap.clear();

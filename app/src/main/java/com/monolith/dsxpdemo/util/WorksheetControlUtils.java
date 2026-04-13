@@ -19,9 +19,12 @@ import java.util.List;
  *
  * @author YANYiZHI
  */
-public class WorksheetUtils {
+public class WorksheetControlUtils {
+
+    private static List<WorksheetItemDTO> cacheList;
 
     public static void startWorksheet(List<WorksheetItemDTO> list) {
+        cacheList = list;
         WarehouseManager manager = DeviceManager.INSTANCE.getWarehouseManager();
         for (WorksheetItemDTO itemDTO : list) {
             WarehouseComponent component = manager.findComponent(ComponentCodes.parseCode(itemDTO.getBinCode()));
@@ -36,18 +39,21 @@ public class WorksheetUtils {
         }
     }
 
-    public static void stopWorksheet(List<WorksheetItemDTO> list) {
+    public static void stopWorksheet() {
         WarehouseManager manager = DeviceManager.INSTANCE.getWarehouseManager();
-        for (WorksheetItemDTO itemDTO : list) {
-            WarehouseComponent component = manager.findComponent(ComponentCodes.parseCode(itemDTO.getBinCode()));
-            Collection<SimpleWtDauWorker> daus = WarehouseComponentUtils.findDauByType(component, SimpleWtDauWorker.class);
-            for (SimpleWtDauWorker dau : daus) {
-                try {
-                    dau.stopWTWorksheet();
-                } catch (Exception e) {
-                    System.out.println("stop worksheet item err");
+        if (cacheList != null) {
+            for (WorksheetItemDTO itemDTO : cacheList) {
+                WarehouseComponent component = manager.findComponent(ComponentCodes.parseCode(itemDTO.getBinCode()));
+                Collection<SimpleWtDauWorker> daus = WarehouseComponentUtils.findDauByType(component, SimpleWtDauWorker.class);
+                for (SimpleWtDauWorker dau : daus) {
+                    try {
+                        dau.stopWTWorksheet();
+                    } catch (Exception e) {
+                        System.out.println("stop worksheet item err");
+                    }
                 }
             }
         }
+        cacheList = null;
     }
 }
